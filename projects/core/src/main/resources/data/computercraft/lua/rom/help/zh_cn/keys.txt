@@ -1,9 +1,9 @@
-keys API 包含所有可通过 "key" 事件返回的按键代码常量。
+keys API 包含所有可由"key"事件返回的按键代码常量：
 
-使用示例：
+用法示例：
 local sEvent, nKey = os.pullEvent()
 if sEvent == "key" and nKey == keys.enter then
    -- 执行某些操作
 end
 
-完整的按键代码参考请参阅 https://www.minecraft.wiki/w/Key_codes，或查看源代码。
+请参阅 https://www.minecraft.wiki/w/Key_codes 或源代码获取完整参考。

@@ -1,5 +1,4 @@
-操作系统 (OS) API 中的函数：
-
+os（操作系统）API 中的函数：
 os.version()
 os.getComputerID()
 os.getComputerLabel()
@@ -8,21 +7,20 @@ os.run( 环境, 程序路径, 参数 )
 os.loadAPI( 路径 )
 os.unloadAPI( 名称 )
 os.pullEvent( [过滤器] )
-os.queueEvent( 事件名, 参数 )
+os.queueEvent( 事件, 参数 )
 os.clock()
-os.startTimer( 超时时间 )
-os.cancelTimer( 标识符 )
-os.sleep( 超时时间 )
+os.startTimer( 超时 )
+os.cancelTimer( 令牌 )
+os.sleep( 超时 )
 os.time( [来源] )
 os.day( [来源] )
 os.epoch( [来源] )
 os.setAlarm( 时间 )
-os.cancelAlarm( 标识符 )
+os.cancelAlarm( 令牌 )
 os.shutdown()
 os.reboot()
 
 os API 发送的事件：
-
-"timer" - 当通过 os.startTimer() 设置的计时器超时时触发。参数为 os.startTimer() 返回的标识符。
-"alarm" - 当通过 os.setAlarm() 设置的闹钟时间到达时触发。参数为 os.setAlarm() 返回的标识符。
-输入 "help events" 了解事件系统的更多信息。
+"timer" 当由 os.startTimer() 启动的超时完成时。参数是 os.startTimer() 返回的令牌。
+"alarm" 当到达 os.setAlarm() 设置的时间时。参数是 os.setAlarm() 返回的令牌。
+输入 "help events" 了解事件系统。

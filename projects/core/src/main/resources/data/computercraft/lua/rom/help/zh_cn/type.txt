@@ -1,1 +1,1 @@
-type 用于确定文件或目录的类型。输出 "file"（文件）、"directory"（目录）或 "No such path"（路径不存在）。
+type 确定文件或目录的类型。打印"file"（文件）、"directory"（目录）或"No such path"（路径不存在）。
