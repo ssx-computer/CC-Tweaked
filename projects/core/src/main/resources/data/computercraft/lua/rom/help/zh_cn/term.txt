@@ -1,0 +1,22 @@
+终端 API 中的函数:
+term.write( text )
+term.blit( text, textColor, backgroundColor )
+term.clear()
+term.clearLine()
+term.getCursorPos()
+term.setCursorPos( x, y )
+term.setCursorBlink( blink )
+term.isColor()
+term.setTextColor( color )
+term.setBackgroundColor( color )
+term.getTextColor()
+term.getBackgroundColor()
+term.getSize()
+term.scroll( n )
+term.redirect( object )
+term.current()
+term.setPaletteColor( color, r, g, b )
+term.getPaletteColor( color )
+
+终端发出的事件:
+"term_resize" - 当终端大小改变时触发。在多任务环境中，或当终端输出被 "monitor" 程序重定向时可能发生此事件。

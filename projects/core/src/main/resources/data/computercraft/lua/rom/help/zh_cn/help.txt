@@ -1,0 +1,5 @@
+help（帮助）是您正在使用的帮助工具。
+
+输入 "help index" 可以查看所有帮助主题。
+输入 "help" 可以查看帮助介绍。
+输入 "help helpapi" 可以了解帮助 Lua API 的信息。

@@ -1,0 +1,5 @@
+使用 "chat" 遨游红石网络高速公路，这是 CraftOS 的网络聊天程序！创建聊天室并邀请你的朋友！需要在每台计算机上安装有线或无线调制解调器。运行 chat 时，输入 "/help" 可查看可用命令列表。
+
+示例：
+"chat host forgecraft" 将创建一个名为 "forgecraft" 的聊天室
+"chat join forgecraft direwolf20" 将连接到名为 "forgecraft" 的聊天室，并使用昵称 "direwolf20"

@@ -1,0 +1,13 @@
+有线调制解调器和无线调制解调器都是可用于 CraftOS 的外设设备。输入 "help peripheral" 了解如何使用外设 API 连接外设。当调制解调器连接时，peripheral.getType() 将返回 "modem"。
+
+调制解调器提供的方法：
+open( channel ) - 打开频道
+isOpen( channel ) - 检查频道是否打开
+close( channel ) - 关闭频道
+closeAll() - 关闭所有频道
+transmit( channel, replyChannel, message ) - 发送消息
+isWireless() - 判断是否为无线调制解调器
+
+调制解调器触发的事件：
+当在已打开的频道上收到消息时触发 "modem_message" 事件。
+参数为：name（名称）、channel（频道）、replyChannel（回复频道）、message（消息）、distance（距离）

@@ -1,0 +1,4 @@
+apis（API 列表）列出 CraftOS 中当前已加载的可供程序使用的所有 API。
+
+输入 "help <API 名称>" 可以查看特定 API 的帮助信息。
+调用 os.loadAPI( 路径 ) 可以加载额外的 API。

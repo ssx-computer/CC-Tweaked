@@ -1,0 +1,51 @@
+turtle 是一个海龟专用的 API，用于控制海龟的移动。
+
+Turtle API 中的函数：
+
+turtle.forward() - 向前移动一格
+turtle.back() - 向后移动一格
+turtle.up() - 向上移动一格
+turtle.down() - 向下移动一格
+turtle.turnLeft() - 向左转 90 度
+turtle.turnRight() - 向右转 90 度
+turtle.select( slotNum ) - 选择指定编号的槽位
+turtle.getSelectedSlot() - 获取当前选中的槽位编号
+turtle.getItemCount( [slotNum] ) - 获取指定槽位（或当前槽位）中的物品数量
+turtle.getItemSpace( [slotNum] ) - 获取指定槽位（或当前槽位）的剩余空间
+turtle.getItemDetail( [slotNum] ) - 获取指定槽位（或当前槽位）中物品的详细信息
+turtle.equipLeft() - 装备左侧的工具
+turtle.equipRight() - 装备右侧的工具
+turtle.dig( [toolSide] ) - 挖掘前方的方块
+turtle.digUp( [toolSide] ) - 挖掘上方的方块
+turtle.digDown( [toolSide] ) - 挖掘下方的方块
+turtle.place( [signText] ) - 在前方放置物品
+turtle.placeUp( [signText] ) - 在上方放置物品
+turtle.placeDown( [signText] ) - 在下方放置物品
+turtle.attack( [toolSide] ) - 攻击前方的生物
+turtle.attackUp( [toolSide] ) - 攻击上方的生物
+turtle.attackDown( [toolSide] ) - 攻击下方的生物
+turtle.detect() - 检测前方是否有方块
+turtle.detectUp() - 检测上方是否有方块
+turtle.detectDown() - 检测下方是否有方块
+turtle.compare() - 比较前方方块与当前槽位物品
+turtle.compareUp() - 比较上方方块与当前槽位物品
+turtle.compareDown() - 比较下方方块与当前槽位物品
+turtle.inspect() - 获取前方方块的详细信息
+turtle.inspectUp() - 获取上方方块的详细信息
+turtle.inspectDown() - 获取下方方块的详细信息
+turtle.compareTo( slotNum ) - 将当前槽位物品与指定槽位物品进行比较
+turtle.transferTo( slotNum, [quantity] ) - 将物品转移到指定槽位
+turtle.drop( [quantity] ) - 在前方掉落物品
+turtle.dropUp( [quantity] ) - 在上方掉落物品
+turtle.dropDown( [quantity] ) - 在下方掉落物品
+turtle.suck( [quantity] ) - 从前方吸取物品
+turtle.suckUp( [quantity] ) - 从上方吸取物品
+turtle.suckDown( [quantity] ) - 从下方吸取物品
+turtle.getFuelLevel() - 获取当前燃料等级
+turtle.getFuelLimit() - 获取燃料上限
+turtle.refuel( [quantity] ) - 使用物品补充燃料
+turtle.craft( [quantity] ) - 合成物品（需要匠魂海龟）
+
+Turtle API 触发的事件：
+
+"turtle_inventory" - 当物品栏中的任何物品发生变化时触发。可使用比较操作来检查变化的内容。

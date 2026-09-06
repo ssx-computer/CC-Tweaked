@@ -1,0 +1,4 @@
+Parallel API 中的函数：
+parallel.waitForAny( function1, function2, ... )
+parallel.waitForAll( function1, function2, ... )
+这些方法提供了一种简单的方式，可以同时运行多个 Lua 函数。

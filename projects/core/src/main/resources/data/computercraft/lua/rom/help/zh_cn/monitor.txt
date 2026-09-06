@@ -1,0 +1,6 @@
+monitor 命令会连接到一个已连接的显示器外设，并在其上运行程序。
+输入 "help monitors" 了解如何在 Lua 程序中将显示器作为外设使用。
+
+示例:
+"monitor left hello" 将在计算机左侧的显示器上运行 "hello" 程序。
+"monitor top edit foo" 将在顶部的显示器上运行编辑程序，编辑名为 "foo" 的文件。

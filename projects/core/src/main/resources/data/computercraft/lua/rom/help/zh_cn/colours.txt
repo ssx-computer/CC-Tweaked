@@ -1,0 +1,9 @@
+colours（颜色）API 中的函数
+（用于 redstone.setBundledOutput）：
+colours.combine( colour1, colour2, colour3, ... )
+colours.subtract( colours, colour1, colour2, ... )
+colours.test( colours, colour )
+colours.rgb8( r, g, b )
+
+colours API 中的颜色常量，按位顺序升序排列：
+colours.white（白色）、colours.orange（橙色）、colours.magenta（品红色）、colours.lightBlue（浅蓝色）、colours.yellow（黄色）、colours.lime（黄绿色）、colours.pink（粉色）、colours.grey（灰色）、colours.lightGrey（浅灰色）、colours.cyan（青色）、colours.purple（紫色）、colours.blue（蓝色）、colours.brown（棕色）、colours.green（绿色）、colours.red（红色）、colours.black（黑色）。

@@ -1,0 +1,7 @@
+位运算 API 中的函数（注意：此 API 将在未来版本中移除，请使用 bit32 代替）：
+bit.bnot(n)          -- 位非 (~n)
+bit.band(m, n)       -- 位与 (m & n)
+bit.bor(m, n)        -- 位或 (m | n)
+bit.bxor(m, n)       -- 位异或 (m ^ n)
+bit.brshift(n, bits) -- 右移 (n >> bits)
+bit.blshift(n, bits) -- 左移 (n << bits)

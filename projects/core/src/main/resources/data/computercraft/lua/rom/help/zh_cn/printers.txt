@@ -1,0 +1,12 @@
+打印机（Printer）是一种可用于 CraftOS 的外设设备。输入 "help peripheral" 了解如何使用外设 API 连接外设。当打印机连接时，peripheral.getType() 将返回 "printer"。
+
+打印机提供的方法：
+getInkLevel() - 获取墨水剩余量
+getPaperLevel() - 获取纸张剩余量
+newPage() - 开始新页面
+setPageTitle( title ) - 设置页面标题
+getPageSize() - 获取页面大小
+setCursorPos( x, y ) - 设置光标位置
+getCursorPos() - 获取光标位置
+write( text ) - 写入文本
+endPage() - 结束当前页面

@@ -1,0 +1,3 @@
+Redirection ComputerCraft Edition 是 CraftOS 版的 Redirection，这是一款由 ComputerCraft 作者 Dan200 制作的趣味新解谜游戏。
+
+在任何高级电脑上运行此游戏，然后访问 http://www.redirectiongame.com 玩完整版游戏！

@@ -1,0 +1,7 @@
+工作台是一种外设设备，可以在运行 CraftOS 的精巧海龟上找到。输入"help peripheral"来学习如何使用外设 API 连接外设。当工作台连接到海龟时，peripheral.getType() 将返回"workbench"。
+
+工作台提供的方法：
+craft( channel )
+  使用指定频道的合成配方进行合成。
+  参数：
+    channel - 要使用的合成频道编号

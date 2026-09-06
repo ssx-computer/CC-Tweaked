@@ -1,0 +1,7 @@
+pocket 是一个在便携式计算机上可用的 API，允许修改其升级设备。
+
+pocket API 中的函数：
+pocket.equipBack()
+pocket.unequipBack()
+
+装备升级设备时，会从选定的槽位开始搜索背包中的合适升级设备。如果找不到，则会检查副手栏。

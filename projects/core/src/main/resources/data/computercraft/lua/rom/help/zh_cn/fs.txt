@@ -1,0 +1,42 @@
+文件系统 API 中的函数：
+
+fs.list( 路径 )
+fs.find( 通配符 )
+fs.exists( 路径 )
+fs.isDir( 路径 )
+fs.isReadOnly( 路径 )
+fs.getDir( 路径 )
+fs.getName( 路径 )
+fs.getSize( 路径 )
+fs.getDrive( 路径 )
+fs.getFreeSpace( 路径 )
+fs.makeDir( 路径 )
+fs.move( 路径, 路径 )
+fs.copy( 路径, 路径 )
+fs.delete( 路径 )
+fs.combine( 路径, 本地路径 )
+fs.open( 路径, 模式 )
+fs.complete( 路径, 位置 )
+
+fs.open() 可用的模式有："r"、"w"、"a"、"rb"、"wb" 和 "ab"。
+
+以 "r" 模式打开的文件函数：
+readLine()
+readAll()
+close()
+read( 数量 )
+
+以 "w" 或 "a" 模式打开的文件函数：
+write( 字符串 )
+writeLine( 字符串 )
+flush()
+close()
+
+以 "rb" 模式打开的文件函数：
+read()
+close()
+
+以 "wb" 或 "ab" 模式打开的文件函数：
+write( 字节 )
+flush()
+close()

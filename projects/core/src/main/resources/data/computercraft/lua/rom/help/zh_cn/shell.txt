@@ -1,0 +1,3 @@
+shell（命令行解释器）是顶层程序，负责解释命令并运行程序。
+
+输入 "help shellapi" 可以了解 shell Lua API 的信息。

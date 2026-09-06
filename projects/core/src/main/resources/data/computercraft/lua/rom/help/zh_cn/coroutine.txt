@@ -1,0 +1,2 @@
+协程（coroutine）是 Lua 5.1 的标准 API。
+更多详细信息请参阅 http://www.lua.org/manual/5.1/

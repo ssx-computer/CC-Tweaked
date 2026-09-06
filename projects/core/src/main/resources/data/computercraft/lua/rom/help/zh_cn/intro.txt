@@ -1,0 +1,8 @@
+欢迎使用 CraftOS！
+
+输入 "programs" 可以查看所有可运行的程序。
+输入 "help <程序名>" 可以查看特定程序的帮助信息。
+输入 "help programming" 可以学习编程知识。
+输入 "help whatsnew" 可以了解新功能。
+输入 "help credits" 可以查看所有贡献者。
+输入 "help index" 可以查看所有帮助主题。

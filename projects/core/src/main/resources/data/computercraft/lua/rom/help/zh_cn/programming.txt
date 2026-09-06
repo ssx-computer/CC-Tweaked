@@ -1,0 +1,12 @@
+学习 Lua 编程语言，请访问 http://lua-users.org/wiki/TutorialDirectory。
+
+要在 CraftOS 中体验 Lua，运行 "lua" 程序并开始输入代码。
+要创建程序，请使用 "edit" 创建文件，然后在 shell 中输入文件名来运行它们。
+如果你将程序命名为 "startup" 并放置在根目录或磁盘驱动器中，它将在计算机启动时自动运行。
+
+要终止陷入循环的程序，请按住 Ctrl+T 1秒钟。
+要快速关闭计算机，请按住 Ctrl+S 1秒钟。
+要快速重启计算机，请按住 Ctrl+R 1秒钟。
+
+要了解可用的编程 API，请输入 "apis" 或 "help apis"。
+如果遇到问题，请访问 http://www.computercraft.info/ 论坛获取建议和教程。

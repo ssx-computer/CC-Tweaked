@@ -1,0 +1,11 @@
+文本工具 API 中的函数：
+
+textutils.slowPrint( 文本 )
+textutils.tabulate( 表格, 表格2, ... )
+textutils.pagedTabulate( 表格, 表格2, ... )
+textutils.formatTime( 时间, 是否24小时制 )
+textutils.serialize( 表格 )
+textutils.unserialize( 字符串 )
+textutils.serializeJSON( 表格, [使用NBT样式] )
+textutils.urlEncode( 字符串 )
+textutils.complete( 字符串, 表格 )

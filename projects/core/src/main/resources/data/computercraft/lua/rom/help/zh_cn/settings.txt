@@ -1,0 +1,21 @@
+设置 API 中的函数：
+
+settings.get( 名称, [默认值] )
+settings.set( 名称, 值 )
+settings.unset( 名称 )
+settings.load( 路径 )
+settings.save( 路径 )
+settings.clear()
+settings.getNames()
+
+默认设置：
+
+shell.autocomplete - 启用 Shell 中的自动补全功能。
+lua.autocomplete - 启用 Lua 程序中的自动补全功能。
+edit.autocomplete - 启用 Edit 程序中的自动补全功能。
+edit.default_extension - 设置 Edit 程序创建文件的默认扩展名。
+paint.default_extension - 设置 Paint 程序创建文件的默认扩展名。
+bios.use_multishell - 在高级电脑、 turtles、掌上电脑和命令电脑上启用多标签页功能。
+shell.allow_disk_startup - 如果有磁盘驱动器连接着内置 'startup' 脚本的磁盘，此设置允许电脑启动时自动运行该脚本。
+shell.allow_startup - 如果电脑根目录存在 'startup' 脚本，此设置允许电脑启动时自动运行该脚本。
+list.show_hidden - 决定 List 程序是否列出隐藏文件。

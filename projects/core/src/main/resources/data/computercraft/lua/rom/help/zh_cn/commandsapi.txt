@@ -1,0 +1,15 @@
+命令 API 中的函数:
+commands.exec( 命令 )
+commands.execAsync( 命令 )
+commands.list()
+commands.getBlockPosition()
+commands.getBlockInfo( x, y, z )
+commands.getBlockInfos( minx, miny, minz, maxx, maxy, maxz )
+
+命令 API 也可以直接调用命令,例如:
+commands.say( "你好,世界" )
+commands.give( "dan200", "minecraft:diamond", 64 )
+这适用于任何命令。使用 "commands.async" 替代 "commands" 来异步执行。
+
+命令 API 仅在命令计算机上可用。
+访问 https://minecraft.wiki/w/Commands 查看所有命令的文档。

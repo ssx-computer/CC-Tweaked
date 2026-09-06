@@ -1,0 +1,20 @@
+
+外设 API 用于与外部外设设备进行交互。
+输入 "help peripherals" 了解可用的外设。
+
+外设 API 中的函数：
+
+peripheral.getNames()
+peripheral.isPresent( name )
+peripheral.getName( peripheral )
+peripheral.getType( name )
+peripheral.getMethods( name )
+peripheral.call( name, methodName, param1, param2, ... )
+peripheral.wrap( name )
+peripheral.find( type, [fnFilter] )
+
+外设 API 触发的事件：
+
+"peripheral" - 当新的外设被连接时触发，参数为外设名称。
+"peripheral_detach" - 当外设被移除时触发，参数为外设名称。
+输入 "help events" 了解事件系统。

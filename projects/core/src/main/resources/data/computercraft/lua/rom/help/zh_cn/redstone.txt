@@ -1,0 +1,9 @@
+redstone 命令可用于获取、设置或脉冲式控制计算机的红石输入和输出。
+
+示例:
+"redstone probe" 将列出计算机所有的红石输入。
+"redstone set left true" 将打开左侧的红石输出。
+"redstone set right blue false" 将关闭右侧红石输出捆绑线缆中的蓝色线。
+"redstone pulse front 10 1" 将在前方红石输出上发出 10 次持续 1 秒的红石脉冲。
+
+输入 "help redstoneapi" 或 "help rs" 了解红石 Lua API 的信息。

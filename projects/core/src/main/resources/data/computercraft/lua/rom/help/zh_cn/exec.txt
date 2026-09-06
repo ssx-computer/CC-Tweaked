@@ -1,0 +1,7 @@
+在命令计算机上，"exec" 将像在命令方块中输入一样执行命令。使用 "commands" 列出所有可用命令。
+
+示例：
+"exec say Hello World"
+"exec setblock ~0 ~1 ~0 minecraft:dirt"
+
+在 Lua 程序中使用命令帮助，请输入 "help commandsapi"。

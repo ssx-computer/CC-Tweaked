@@ -1,0 +1,6 @@
+alias（别名）用于将 shell 命令分配给其他程序。
+
+用法示例：
+"alias dir ls" - 将 "dir" 命令设置为运行 "ls" 程序
+"alias dir" - 移除 "dir" 上的别名设置
+"alias" - 列出所有当前别名

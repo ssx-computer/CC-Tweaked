@@ -1,0 +1,6 @@
+cp 用于将文件或目录从一处复制到另一处。
+
+示例：
+"cp rom myrom" 将 "rom" 复制到 "myrom"。
+"cp rom mystuff/rom" 将 "rom" 复制到 "mystuff/rom"。
+"cp disk/* disk2" 将一个磁盘的内容复制到另一个磁盘。

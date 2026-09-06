@@ -1,0 +1,3 @@
+adventure（冒险）是一个面向 CraftOS 的文字冒险游戏。在冒险世界中探索时，请向解释器输入简单的指令，例如：
+
+"go north"（向北走）、"punch tree"（砍树）、"craft planks"（合成木板）、"mine coal with pickaxe"（用镐挖煤）、"hit creeper with sword"（用剑攻击苦力怕）
