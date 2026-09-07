@@ -1,0 +1,2 @@
+string 是标准 Lua 5.1 API。
+更多信息请参阅 http://www.lua.org/manual/5.1/

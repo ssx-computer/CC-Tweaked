@@ -1,0 +1,2 @@
+在命令电脑上，"commands" 将列出所有可用的命令。使用 "exec" 来执行它们。
+在 Lua 程序中使用命令的帮助请输入 "help commandsapi"。

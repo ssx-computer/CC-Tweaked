@@ -1,0 +1,8 @@
+"peripherals" 程序将列出此计算机可访问的所有外设设备。
+外设是 CraftOS 计算机和机器人可以使用外设 API 进行交互的外部设备。
+
+输入 "help peripheral" 了解如何使用外设 API。
+输入 "help drives" 了解如何使用驱动器。
+输入 "help modems" 了解如何使用调制解调器。
+输入 "help monitors" 了解如何使用显示器。
+输入 "help printers" 了解如何使用打印机。

@@ -1,0 +1,6 @@
+alias 用于将 shell 命令设置为运行其他程序。
+
+示例：
+"alias dir ls" 将使 "dir" 命令运行 "ls" 程序
+"alias dir" 将移除 "dir" 的别名设置
+"alias" 将列出所有当前别名

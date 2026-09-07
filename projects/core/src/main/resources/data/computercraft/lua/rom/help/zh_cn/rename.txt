@@ -1,0 +1,4 @@
+rename 用于重命名文件或文件夹。
+
+示例：
+"rename foo bar" 将文件 "foo" 重命名为 "bar"。

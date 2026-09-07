@@ -1,0 +1,4 @@
+tunnel 是一个适用于 Mining Turtles（采矿机器人）的程序。Tunnel 会挖掘指定深度的 3x2 大小的隧道。
+
+示例：
+"tunnel 20" 会挖掘一条 20 格长的隧道。

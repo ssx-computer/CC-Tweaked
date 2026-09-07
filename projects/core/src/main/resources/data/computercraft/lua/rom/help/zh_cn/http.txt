@@ -1,0 +1,9 @@
+HTTP API 中的函数：
+http.checkURL( url )
+http.checkURLAsync( url )
+http.request( url, [postData], [headers] )
+http.get( url, [headers] )
+http.post( url, postData, [headers] )
+
+HTTP API 可能在 ComputerCraft.cfg 中被禁用。
+在调用 http.request() 后一段时间，将会触发 "http_success" 或 "http_failure" 事件。成功时返回的参数是 url 和文件句柄；失败时返回的参数是 nil、错误消息，以及（可选的）文件句柄。http.get() 和 http.post() 会阻塞直到事件触发。

@@ -1,0 +1,12 @@
+有线和无线调制解调器是 CraftOS 可用的外设设备。输入"help peripheral"了解如何使用外设 API 连接外设。当调制解调器连接时，peripheral.getType() 将返回"modem"。
+
+调制解调器暴露的方法：
+open( channel )
+isOpen( channel )
+close( channel )
+closeAll()
+transmit( channel, replyChannel, message )
+isWireless()
+
+调制解调器触发的事件：
+"modem_message"，当在开放的频道上收到消息时。参数为 name、channel、replyChannel、message、distance

@@ -1,0 +1,19 @@
+磁盘驱动器是 CraftOS 的一个外设设备。输入 "help peripheral" 了解如何使用外设 API 连接外设。当磁盘驱动器连接后，peripheral.getType() 将返回 "drive"。
+
+磁盘驱动器暴露的方法：
+isDiskPresent()
+getDiskLabel()
+setDiskLabel( 标签 )
+hasData()
+getMountPath()
+hasAudio()
+getAudioTitle()
+playAudio()
+stopAudio()
+ejectDisk()
+getDiskID()
+
+磁盘驱动器触发的事件：
+"disk" - 当磁盘或其他物品插入驱动器时触发。参数为驱动器名称。
+"disk_eject" - 当磁盘从驱动器中移除时触发。参数为驱动器名称。
+输入 "help events" 了解事件系统。

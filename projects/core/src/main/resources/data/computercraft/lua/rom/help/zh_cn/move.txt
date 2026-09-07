@@ -1,0 +1,6 @@
+mv 用于将文件或目录从一处移动或重命名到另一处。
+
+用法示例：
+"mv foo bar" 将文件 "foo" 重命名为 "bar"
+"mv foo bar/foo" 将文件 "foo" 移动到名为 "bar" 的文件夹中
+"mv disk/* disk2" 将一个磁盘的内容移动到另一个磁盘

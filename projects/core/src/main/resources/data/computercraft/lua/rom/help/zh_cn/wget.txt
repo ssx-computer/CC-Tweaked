@@ -1,0 +1,11 @@
+wget 是一个用于从互联网下载文件的程序。这对于下载其他玩家创建的程序非常有用。
+
+如果没有指定文件名，wget 会尝试从 URL 中确定文件名：去除锚点、参数和尾部斜杠，然后取最后一个斜杠之后的所有内容。
+
+HTTP API 必须在 ComputerCraft.cfg 中启用才能使用此程序。
+
+示例：
+"wget http://pastebin.com/raw/CxaWmPrX test" 将从 URL http://pastebin.com/raw/CxaWmPrX 下载文件，并保存为 "test"。
+"wget http://example.org/test.lua/?foo=bar#qzu" 将从 URL http://example.org/test.lua/?foo=bar#qzu 下载文件，并保存为 "test.lua"。
+"wget http://example.org/" 将从 URL http://example.org 下载文件，并保存为 "example.org"。
+"wget run http://pastebin.com/raw/CxaWmPrX" 将从 URL http://pastebin.com/raw/CxaWmPrX 下载文件并立即运行。

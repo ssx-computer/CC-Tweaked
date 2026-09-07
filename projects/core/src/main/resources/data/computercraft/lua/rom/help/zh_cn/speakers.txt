@@ -1,0 +1,9 @@
+扬声器是一种可用于 CraftOS 的外设设备。输入 "help peripheral" 了解如何使用外设 API 连接外设。当扬声器连接时，peripheral.getType() 将返回 "speaker"。
+
+扬声器提供的方法：
+playSound( sResourceName, nVolume, nPitch )
+playNote( sInstrumentName, nVolume, nPitch )
+
+资源名称与 /playsound 命令使用的相同，例如 "minecraft:entity.cow.ambient"。
+乐器包括："harp"、"bass"、"snare"、"hat" 和 "basedrum"，在 Minecraft 1.12 及以上版本还增加了 "flute"、"bell"、"chime" 和 "guitar"。
+Tick 是音符方块被调音（右击）的次数。

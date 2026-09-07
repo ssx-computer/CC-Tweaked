@@ -1,0 +1,5 @@
+帮助 API 中的函数：
+help.setPath( path )
+help.lookup( topic )
+help.topics()
+help.completeTopic( topic )
