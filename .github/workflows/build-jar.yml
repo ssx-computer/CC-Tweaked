@@ -33,21 +33,21 @@ jobs:
     - name: 📥 Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
-    - name: ⚒️ Build NeoForge
-      run: ./gradlew :neoforge:build --no-daemon
+    - name: ⚒️ Build Forge
+      run: ./gradlew :forge:build --no-daemon
 
-    - name: 📦 Find NeoForge JAR
-      id: find-neoforge-jar
+    - name: 📦 Find Forge JAR
+      id: find-forge-jar
       run: |
-        JAR_PATH=$(find projects/neoforge/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" | head -1)
-        echo "neoforge-jar=$JAR_PATH" >> $GITHUB_OUTPUT
+        JAR_PATH=$(find projects/forge/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" | head -1)
+        echo "forge-jar=$JAR_PATH" >> $GITHUB_OUTPUT
         echo "Found: $JAR_PATH"
 
-    - name: 📤 Upload NeoForge JAR
+    - name: 📤 Upload Forge JAR
       uses: actions/upload-artifact@v4
       with:
-        name: CC-Tweaked-NeoForge
-        path: ${{ steps.find-neoforge-jar.outputs.neoforge-jar }}
+        name: CC-Tweaked-Forge
+        path: ${{ steps.find-forge-jar.outputs.forge-jar }}
         retention-days: 7
 
   build-fabric:
@@ -88,7 +88,7 @@ jobs:
   build-all:
     name: Build All JARs
     runs-on: ubuntu-latest
-    needs: [build-neoforge, build-fabric]
+    needs: [build-forge, build-fabric]
     
     steps:
     - name: 📥 Clone repository
@@ -110,8 +110,8 @@ jobs:
     - name: 📦 Prepare All JARs
       run: |
         mkdir -p jars
-        # Copy NeoForge JARs
-        find projects/neoforge/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" -exec cp {} jars/ \;
+        # Copy Forge JARs
+        find projects/forge/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" -exec cp {} jars/ \;
         # Copy Fabric JARs
         find projects/fabric/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" -exec cp {} jars/ \;
         ls -la jars/
