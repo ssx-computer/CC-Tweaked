@@ -1,0 +1,9 @@
+redstone 程序可用于获取、设置或脉冲红石输入和输出。
+
+示例：
+"redstone probe" 将列出计算机的所有红石输入
+"redstone set left true" 打开左侧红石输出。
+"redstone set right blue false" 关闭右侧红石输出上捆绑线缆中的蓝色线。
+"redstone pulse front 10 1" 在前方红石输出上发出 10 个一秒的红石脉冲。
+
+输入"help redstoneapi"或"help rs"获取红石 Lua API 的信息。

@@ -1,0 +1,17 @@
+磁盘 API 中的函数。这些函数用于与磁盘驱动器交互：
+disk.isPresent( 驱动器 )
+disk.setLabel( 驱动器, 标签 )
+disk.getLabel( 驱动器 )
+disk.hasData( 驱动器 )
+disk.getMountPath( 驱动器 )
+disk.hasAudio( 驱动器 )
+disk.getAudioTitle( 驱动器 )
+disk.playAudio( 驱动器 )
+disk.stopAudio()
+disk.eject( 驱动器 )
+disk.getID( 驱动器 )
+
+磁盘 API 触发的事件：
+"disk" - 当磁盘或其他物品插入磁盘驱动器时触发。参数为驱动器名称
+"disk_eject" - 当磁盘从磁盘驱动器中移除时触发。参数为驱动器名称
+输入 "help events" 了解事件系统。

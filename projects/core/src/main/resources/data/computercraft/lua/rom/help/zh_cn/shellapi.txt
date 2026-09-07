@@ -1,0 +1,19 @@
+Shell API 中的函数：
+shell.exit()
+shell.dir()
+shell.setDir( path )
+shell.path()
+shell.setPath( path )
+shell.resolve( localpath )
+shell.resolveProgram( name )
+shell.aliases()
+shell.setAlias( alias, command )
+shell.clearAlias( alias )
+shell.programs()
+shell.run( program, arguments )
+shell.getRunningProgram()
+shell.complete( line )
+shell.completeProgram( program )
+shell.setCompletionFunction( program, fnComplete )
+shell.openTab( program, arguments )（需要高级计算机）
+shell.switchTab( n )（需要高级计算机）

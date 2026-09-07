@@ -1,0 +1,2 @@
+io 是标准 Lua 5.1 API，为 CraftOS 重新实现。并非所有功能都可用。
+更多信息请参阅 http://www.lua.org/manual/5.1/

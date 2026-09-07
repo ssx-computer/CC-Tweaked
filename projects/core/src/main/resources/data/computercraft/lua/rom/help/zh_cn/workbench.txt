@@ -1,0 +1,4 @@
+工作台（Workbench）是一种可在运行 CraftOS 的 Crafty Turtles（高级机器人）上使用的外设。输入 "help peripheral" 了解如何使用 Peripheral API 连接外设。当工作台连接到机器人时，peripheral.getType() 将返回 "workbench"。
+
+工作台暴露的方法：
+craft( channel )

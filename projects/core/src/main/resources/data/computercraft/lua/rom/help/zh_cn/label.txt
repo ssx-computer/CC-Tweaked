@@ -1,0 +1,9 @@
+label 用于获取或设置电脑的标签，或已连接磁盘驱动器中软盘的标签。
+
+示例：
+"label get" 打印电脑的标签。
+"label get left" 打印左侧驱动器中磁盘的标签。
+"label set "My Computer"" 将电脑的标签设置为 "My Computer"。
+"label set left "My Programs"" 将左侧驱动器中磁盘的标签设置为 "My Programs"。
+"label clear" 清除电脑的标签。
+"label clear left" 清除左侧驱动器中磁盘的标签。

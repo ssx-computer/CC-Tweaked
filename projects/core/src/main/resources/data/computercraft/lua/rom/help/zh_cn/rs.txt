@@ -1,0 +1,19 @@
+红石 API 中的函数：
+rs.getSides( )
+rs.getInput( side )
+rs.setOutput( side, boolean )
+rs.getOutput( side )
+rs.getAnalogInput( side )
+rs.setAnalogOutput( side, number )
+rs.getAnalogOutput( side )
+
+用于处理红石捆绑线缆的红石 API 函数：
+rs.getBundledInput( side )
+rs.testBundledInput( side, color )
+rs.setBundledOutput( side, colors )
+rs.getBundledOutput( side )
+输入"help bundled"获取使用示例。
+
+红石 API 触发的事件：
+"redstone"，当任何红石输入状态改变时。使用 getInput() 或 getBundledInput() 检查变化。
+输入"help events"了解事件系统。

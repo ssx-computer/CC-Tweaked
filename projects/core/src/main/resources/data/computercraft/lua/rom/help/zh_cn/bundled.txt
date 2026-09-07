@@ -1,0 +1,15 @@
+设置捆绑输出：
+c = colors.combine( colors.red, colors.blue )
+rs.setBundledOutput( "left", c )
+
+c = colors.combine( c, colors.green )
+rs.setBundledOutput( "left", c )
+
+c = colors.subtract( c, colors.blue )
+rs.setBundledOutput( "left", c )
+
+获取捆绑输入：
+c = rs.getBundledInput( "right" )
+red = colors.test( c, colors.red )
+
+输入 "help colors" 查看线缆颜色列表。

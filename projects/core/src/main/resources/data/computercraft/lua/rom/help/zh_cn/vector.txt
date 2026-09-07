@@ -1,0 +1,17 @@
+3D 向量数学 API 中的函数：
+vector.new( x, y, z )
+
+vector.new() 返回的向量具有以下字段和方法：
+vector.x
+vector.y
+vector.z
+vector:add( 向量 )
+vector:sub( 向量 )
+vector:mul( 数值 )
+vector:dot( 向量 )
+vector:cross( 向量 )
+vector:length()
+vector:normalize()
+vector:round()
+vector:tostring()
+向量也可以使用 +、- 和 * 运算符。

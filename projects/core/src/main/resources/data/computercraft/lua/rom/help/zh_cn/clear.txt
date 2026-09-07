@@ -1,0 +1,6 @@
+clear 用于清空屏幕和/或重置调色板。
+示例：
+"clear" 清空屏幕，但保留调色板设置
+"clear screen" 与 "clear" 效果相同
+"clear palette" 重置调色板，但不清空屏幕
+"clear all" 清空屏幕并重置调色板

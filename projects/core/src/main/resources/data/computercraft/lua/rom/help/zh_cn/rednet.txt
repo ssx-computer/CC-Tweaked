@@ -1,0 +1,18 @@
+rednet API 提供了一种使用调制解调器实现的简单计算机网络模型。
+
+rednet API 中的函数：
+rednet.open( side )
+rednet.close( [side] )
+rednet.isOpen( [side] )
+rednet.send( receiverID, message, [protocol] ) -- 发送给特定计算机
+rednet.broadcast( message, [protocol] ) -- 发送给所有计算机
+rednet.receive( [protocol], [timeout] ) -- 返回：senderID, message, protocol
+rednet.host( protocol, hostname )
+rednet.unhost( protocol )
+rednet.lookup( protocol, [hostname] ) -- 返回：ID
+
+rednet API 触发的事件：
+"rednet_message"，当收到消息时。参数为 senderID、message、protocol
+输入"help events"了解事件系统。
+
+rednet 不是使用调制解调器进行网络的唯一方式。直接使用外设 API 与调制解调器接口交互并监听"modem_message"事件可以提供更低级别的控制，但会失去强大的高级网络功能。

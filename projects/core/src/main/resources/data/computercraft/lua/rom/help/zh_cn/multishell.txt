@@ -1,0 +1,2 @@
+multishell 是高级电脑上的顶层程序，用于管理后台标签页。
+输入 "help shellapi" 获取关于 shell Lua API 的信息。

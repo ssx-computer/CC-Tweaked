@@ -1,0 +1,23 @@
+显示器是 CraftOS 可用的外设设备。输入"help peripheral"了解如何使用外设 API 连接外设。当显示器连接时，peripheral.getType() 将返回"monitor"。包装后的显示器可以与 term.redirect() 一起使用，将所有终端输出发送到显示器。
+
+显示器暴露的方法：
+write( text )
+blit( text, textColor, backgroundColor )
+clear()
+clearLine()
+getCursorPos()
+setCursorPos( x, y )
+setCursorBlink( blink )
+isColor()
+setTextColor( color )
+setBackgroundColor( color )
+getTextColor()
+getBackgroundColor()
+getSize()
+scroll( n )
+setPaletteColor( color, r, g, b )
+getPaletteColor( color )
+
+显示器触发的事件：
+"monitor_touch"，当玩家触摸高级显示器时。参数为 name、x、y
+"monitor_resize"，当显示器大小改变时。参数为显示器的名称。
