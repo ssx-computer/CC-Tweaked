@@ -86,39 +86,33 @@ jobs:
         retention-days: 7
 
   build-all:
-    name: Build All JARs
+    name: Collect All JARs
     runs-on: ubuntu-latest
-    needs: [build-forge, build-fabric]
+    needs: [build-neoforge, build-fabric]
     
     steps:
-    - name: 📥 Clone repository
-      uses: actions/checkout@v4
-
-    - name: 📥 Set up Java
-      uses: actions/setup-java@v4
+    - name: 📥 Download NeoForge JAR
+      uses: actions/download-artifact@v4
       with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: 'gradle'
+        name: CC-Tweaked-Forge
+        path: ./jars/forge
 
-    - name: 📥 Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-
-    - name: ⚒️ Build All
-      run: ./gradlew assemble --no-daemon
+    - name: 📥 Download Fabric JAR
+      uses: actions/download-artifact@v4
+      with:
+        name: CC-Tweaked-Fabric
+        path: ./jars/fabric
 
     - name: 📦 Prepare All JARs
       run: |
-        mkdir -p jars
-        # Copy Forge JARs
-        find projects/forge/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" -exec cp {} jars/ \;
-        # Copy Fabric JARs
-        find projects/fabric/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" -exec cp {} jars/ \;
-        ls -la jars/
+        mkdir -p jars/combined
+        cp jars/forge/*.jar jars/combined/
+        cp jars/fabric/*.jar jars/combined/
+        ls -la jars/combined/
 
     - name: 📤 Upload All JARs
       uses: actions/upload-artifact@v4
       with:
         name: CC-Tweaked-All-JARs
-        path: ./jars
+        path: ./jars/combined
         retention-days: 30
