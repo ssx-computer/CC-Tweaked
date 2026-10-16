@@ -1,0 +1,69 @@
+song renders a document written in "SONG HTML", a small markup language for
+displaying styled text on the terminal. Run it by passing a file to it:
+
+    song example.song
+
+A document is ordinary text, with tags written between angle brackets. Tags are
+never closed, and any tag which is not recognised is silently ignored. If a "<"
+is not followed by a ">", the rest of the document is treated as plain text.
+
+A tag may take an argument, which may be written either inside the angle
+brackets, as "<size 2>", or straight after them, as "<size>2". For example:
+
+  <br>"Hello World"     Start a new line and write "Hello World" on it. The
+                        quotes are not shown; a quoted string right after
+                        "<br>" is the text to write on the new line.
+  <size>8<size>         Set the text size (here to 3, the maximum).
+  <colour>"red"         Set the text colour to red.
+  <image>"path"         Draw an image at the cursor.
+
+Tags:
+
+  <br>                 Start a new line. "<br/>" and "<br />" also work, and a
+                       quoted string may follow the tag (see above).
+
+  <size N>             Set the text size to N, where N is 1, 2 or 3. Values
+                       below 1 are treated as 1, and values above 3 as 3.
+  <size> or </size>    Reset the text size to 1.
+
+  <colour "name">      Set the text colour.
+  <colour> or </colour>
+                       Reset the text colour to white. "color" and "</color>"
+                       are accepted as well.
+
+  <bg "name">          Set the background colour.
+  <background "name">  "background" is an alias of "bg".
+
+  <image "path">       Draw an image at the cursor. Relative paths are resolved
+                       relative to the document's directory. Images use the
+                       paint (.nfp) format, or the nft format if the path ends
+                       in ".nft".
+
+  <!-- comment -->     Ignored. If "-->" is never found, the rest of the
+                       document is skipped.
+
+Text may contain a backslash to escape the next character: "\<" prints a "<",
+"\\" prints a "\", and "\x" prints "x" for any other character x.
+
+A colour may be given as:
+  * a number, which is used as a raw color value;
+  * a hex code such as "#ff0000" or "ff0000", which is matched to the closest
+    of the 16 palette colours;
+  * a colour name such as "red", "lightBlue" or "grey" (case insensitive).
+
+Sizes 2 and 3 draw each character using a built-in 3x5 bitmap font, scaled up.
+Only the letters A-Z, the digits 0-9 and spaces can be made larger; lowercase
+letters are shown as uppercase. Any other character (such as a Chinese
+character) is drawn at the normal size instead.
+
+Example:
+
+    #!song
+    <size 3><colour "yellow">SONG<colour>
+    <bg "blue">
+    <size 2>Hello, world!
+    <bg>
+    <size>
+    <br>"Hello, world"
+    A big document, drawn with <colour "lime">SONG HTML<colour>.
+    <image "/rom/example.nfp">

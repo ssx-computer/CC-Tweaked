@@ -1,0 +1,26 @@
+#!song
+<!-- SPDX-FileCopyrightText: 2026 The CC: Tweaked Developers -->
+<!-- SPDX-License-Identifier: LicenseRef-CCPL -->
+<colour "yellow"><size 3>SONG HTML<colour><size>
+<br/>
+This is a <colour "lime">demo<colour> of the SONG HTML renderer, a tiny markup
+language for CraftOS. Type <colour "cyan">help song<colour> to learn the syntax.
+<br>"Hello World"
+<br>
+<bg "blue"><colour "white">White text on a blue background.<colour><bg "black">
+<br>
+<size 2>Big text at size 2!<size>
+<br>
+<size 3>SIZE 3!<size>
+<br>
+Mixed sizes: <size 2>ABC 123<size> and plain text follow.
+<br>
+Colours: <colour "red">red<colour>, <colour "lightBlue">light blue<colour>,
+<colour "#00ff00">#00ff00<colour> and <colour "16384">16384<colour>.
+<br>
+Escapes: \<not a tag\> and a literal backslash \\.
+<br>
+<!-- The image below does not exist in the ROM, so it is skipped silently.
+Point it at a real .nfp or .nft file to draw a picture here instead. -->
+<image "demo.nfp">
+Digits: 0 1 2 3 4 5 6 7 8 9

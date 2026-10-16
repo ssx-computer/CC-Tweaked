@@ -99,3 +99,9 @@ SPDX-License-Identifier = "Apache-2.0"
 path = "projects/core/src/test/resources/test-rom/data/json-parsing/**"
 SPDX-FileCopyrightText = "2016 Nicolas Seriot"
 SPDX-License-Identifier = "MIT"
+
+# The SONG HTML demo document is a ROM data file, licensed as CCPL.
+[[annotations]]
+SPDX-FileCopyrightText = "The CC: Tweaked Developers"
+SPDX-License-Identifier = "LicenseRef-CCPL"
+path = "projects/core/src/main/resources/data/computercraft/lua/rom/programs/song_demo.song"
