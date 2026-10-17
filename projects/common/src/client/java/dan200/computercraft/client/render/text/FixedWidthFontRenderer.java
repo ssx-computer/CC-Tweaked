@@ -37,12 +37,25 @@ public final class FixedWidthFontRenderer {
 
     public static final int FONT_HEIGHT = 9;
     public static final int FONT_WIDTH = 6;
-    static final float WIDTH = 256.0f;
 
-    // Sample the centre of the solid white block (x, y = 192..255) rather than its edge, so that linear filtering
-    // cannot bleed transparent pixels into terminal backgrounds.
-    static final float BACKGROUND_START = (WIDTH - 33.0f) / WIDTH;
-    static final float BACKGROUND_END = (WIDTH - 31.0f) / WIDTH;
+    // Each glyph is drawn as a 6x9 logical quad, but the texture stores it at 4x resolution: glyphs are 24x36, spaced
+    // 32x44 apart, with a 4px offset. The atlas is therefore not square (592x784), and U and V must be normalised by
+    // the width and height respectively.
+    static final float WIDTH = 592.0f;
+    static final float HEIGHT = 784.0f;
+
+    static final int GLYPH_WIDTH = 24;
+    static final int GLYPH_HEIGHT = 36;
+    static final int GLYPH_PITCH_X = 32;
+    static final int GLYPH_PITCH_Y = 44;
+    static final int GLYPH_OFFSET = 4;
+
+    // Sample the centre of the solid white block ([520, 584) x [712, 776)) rather than its edge, so that linear
+    // filtering cannot bleed transparent pixels into terminal backgrounds.
+    static final float BACKGROUND_U1 = 550.0f / WIDTH;
+    static final float BACKGROUND_U2 = 553.0f / WIDTH;
+    static final float BACKGROUND_V1 = 742.0f / HEIGHT;
+    static final float BACKGROUND_V2 = 745.0f / HEIGHT;
 
     private static final int BLACK = FastColor.ARGB32.color(255, byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()));
     private static final float Z_OFFSET = 1e-4f;
@@ -69,17 +82,19 @@ public final class FixedWidthFontRenderer {
         var column = index % 16;
         var row = index / 16;
 
-        var xStart = 1 + column * (FONT_WIDTH + 2);
-        var yStart = 1 + row * (FONT_HEIGHT + 2);
+        // The quad stays 6x9 logical pixels, but its UVs cover the (4x larger) vector glyph, so that it is sampled
+        // smoothly rather than being drawn as a pixelated bitmap.
+        var xStart = GLYPH_OFFSET + column * GLYPH_PITCH_X;
+        var yStart = GLYPH_OFFSET + row * GLYPH_PITCH_Y;
 
         quad(
             emitter, x, y, x + FONT_WIDTH, y + FONT_HEIGHT, 0, colour,
-            xStart / WIDTH, yStart / WIDTH, (xStart + FONT_WIDTH) / WIDTH, (yStart + FONT_HEIGHT) / WIDTH, light
+            xStart / WIDTH, yStart / HEIGHT, (xStart + GLYPH_WIDTH) / WIDTH, (yStart + GLYPH_HEIGHT) / HEIGHT, light
         );
     }
 
     public static void drawQuad(QuadEmitter emitter, float x, float y, float z, float width, float height, int colour, int light) {
-        quad(emitter, x, y, x + width, y + height, z, colour, BACKGROUND_START, BACKGROUND_START, BACKGROUND_END, BACKGROUND_END, light);
+        quad(emitter, x, y, x + width, y + height, z, colour, BACKGROUND_U1, BACKGROUND_V1, BACKGROUND_U2, BACKGROUND_V2, light);
     }
 
     private static void drawQuad(QuadEmitter emitter, float x, float y, float width, float height, Palette palette, char colourIndex, int light) {

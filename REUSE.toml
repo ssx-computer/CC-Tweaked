@@ -63,12 +63,18 @@ path = [
     "projects/common/src/main/resources/banner.png",
     "projects/common/src/main/resources/pack.mcmeta",
     "projects/common/src/main/resources/pack.png",
-    "projects/core/src/main/resources/assets/computercraft/textures/gui/term_font.png",
     "projects/core/src/main/resources/data/computercraft/lua/rom/autorun/.ignoreme",
     "projects/core/src/main/resources/data/computercraft/lua/rom/help/**",
     "projects/core/src/main/resources/data/computercraft/lua/rom/programs/fun/advanced/levels/**",
     "projects/web/src/htmlTransform/export/items/computercraft/**",
 ]
+
+[[annotations]]
+# term_font.png mixes the original CCPL bitmap glyphs (the craftos symbols and block characters, upscaled 4x) with
+# Latin glyphs rendered from Cascadia Mono, which is licensed under the SIL Open Font License 1.1.
+SPDX-FileCopyrightText = "2011 Daniel Ratcliffe; Cascadia Code project authors"
+SPDX-License-Identifier = "LicenseRef-CCPL AND OFL-1.1"
+path = "projects/core/src/main/resources/assets/computercraft/textures/gui/term_font.png"
 
 [[annotations]]
 # Community-contributed language files

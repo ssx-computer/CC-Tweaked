@@ -324,8 +324,11 @@ public class Main {
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, (int[]) null, true);
         }
 
-        // Load the font texture and bind it.
+        // Load the font texture and bind it. The font is now a 4x resolution vector atlas, so use linear filtering -
+        // sampling it with GL_NEAREST at the terminal's (much lower) resolution would drop glyph strokes entirely.
         var fontTexture = gl.loadTexture("assets/computercraft/textures/gui/term_font.png");
+        glTextureParameteri(fontTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTextureParameteri(fontTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glBindTextureUnit(TEXTURE_FONT, fontTexture);
 
         // Create a texture and backing buffer for our TBO and bind it.

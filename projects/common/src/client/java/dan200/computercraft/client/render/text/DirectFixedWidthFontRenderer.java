@@ -51,18 +51,20 @@ public final class DirectFixedWidthFontRenderer {
         var column = index % 16;
         var row = index / 16;
 
-        var xStart = 1 + column * (FONT_WIDTH + 2);
-        var yStart = 1 + row * (FONT_HEIGHT + 2);
+        // The quad stays 6x9 logical pixels, but its UVs cover the (4x larger) vector glyph, so that it is sampled
+        // smoothly rather than being drawn as a pixelated bitmap.
+        var xStart = GLYPH_OFFSET + column * GLYPH_PITCH_X;
+        var yStart = GLYPH_OFFSET + row * GLYPH_PITCH_Y;
 
         quad(
             emitter, x, y, x + FONT_WIDTH, y + FONT_HEIGHT, colour,
-            xStart / WIDTH, yStart / WIDTH, (xStart + FONT_WIDTH) / WIDTH, (yStart + FONT_HEIGHT) / WIDTH
+            xStart / WIDTH, yStart / HEIGHT, (xStart + GLYPH_WIDTH) / WIDTH, (yStart + GLYPH_HEIGHT) / HEIGHT
         );
     }
 
     private static void drawQuad(QuadEmitter emitter, float x, float y, float width, float height, Palette palette, char colourIndex) {
         var colour = palette.getRenderColours(getColour(colourIndex, Colour.BLACK));
-        quad(emitter, x, y, x + width, y + height, colour, BACKGROUND_START, BACKGROUND_START, BACKGROUND_END, BACKGROUND_END);
+        quad(emitter, x, y, x + width, y + height, colour, BACKGROUND_U1, BACKGROUND_V1, BACKGROUND_U2, BACKGROUND_V2);
     }
 
     private static void drawBackground(
