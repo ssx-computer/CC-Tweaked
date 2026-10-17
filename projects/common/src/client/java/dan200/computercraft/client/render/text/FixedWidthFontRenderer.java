@@ -39,8 +39,10 @@ public final class FixedWidthFontRenderer {
     public static final int FONT_WIDTH = 6;
     static final float WIDTH = 256.0f;
 
-    static final float BACKGROUND_START = (WIDTH - 6.0f) / WIDTH;
-    static final float BACKGROUND_END = (WIDTH - 4.0f) / WIDTH;
+    // Sample the centre of the solid white block (x, y = 192..255) rather than its edge, so that linear filtering
+    // cannot bleed transparent pixels into terminal backgrounds.
+    static final float BACKGROUND_START = (WIDTH - 33.0f) / WIDTH;
+    static final float BACKGROUND_END = (WIDTH - 31.0f) / WIDTH;
 
     private static final int BLACK = FastColor.ARGB32.color(255, byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()));
     private static final float Z_OFFSET = 1e-4f;

@@ -32,8 +32,10 @@ public class RenderTypes {
 
     /**
      * Renders a fullbright terminal.
+     * <p>
+     * Uses {@link Types#SMOOTH_TEXT} so that the terminal font is anti-aliased rather than jagged when scaled up.
      */
-    public static final RenderType TERMINAL = RenderType.text(FixedWidthFontRenderer.FONT);
+    public static final RenderType TERMINAL = Types.SMOOTH_TEXT;
 
     /**
      * Renders a monitor with the TBO shader.
@@ -44,8 +46,10 @@ public class RenderTypes {
 
     /**
      * A variant of {@link #TERMINAL} which uses the lightmap rather than rendering fullbright.
+     * <p>
+     * Uses {@link Types#SMOOTH_TEXT} so that the terminal font is anti-aliased rather than jagged when scaled up.
      */
-    public static final RenderType PRINTOUT_TEXT = RenderType.text(FixedWidthFontRenderer.FONT);
+    public static final RenderType PRINTOUT_TEXT = Types.SMOOTH_TEXT;
 
     /**
      * Printout's background texture. {@link RenderType#text(ResourceLocation)} is a <em>little</em> questionable, but
@@ -77,9 +81,30 @@ public class RenderTypes {
     }
 
     private static final class Types extends RenderType {
+        // Enable linear filtering and mipmaps on the font, so that glyph edges are smoothed when scaled up. Note we
+        // must reproduce vanilla's text render type exactly - otherwise terminals will render incorrectly.
         private static final RenderStateShard.TextureStateShard TERM_FONT_TEXTURE = new TextureStateShard(
             FixedWidthFontRenderer.FONT,
-            false, false // blur, minimap
+            true, true // blur, mipmap
+        );
+
+        /**
+         * A copy of {@link RenderType#text(ResourceLocation)} which uses {@link #TERM_FONT_TEXTURE}, so that the
+         * terminal font is anti-aliased rather than jagged when it is scaled up.
+         */
+        static final RenderType SMOOTH_TEXT = RenderType.create(
+            "computercraft_terminal_text",
+            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+            VertexFormat.Mode.QUADS,
+            786432,
+            false,
+            true, // sortOnUpload
+            RenderType.CompositeState.builder()
+                .setShaderState(RENDERTYPE_TEXT_SHADER)
+                .setTextureState(TERM_FONT_TEXTURE)
+                .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                .setLightmapState(LIGHTMAP)
+                .createCompositeState(false)
         );
 
         static final RenderType MONITOR_TBO = RenderType.create(
