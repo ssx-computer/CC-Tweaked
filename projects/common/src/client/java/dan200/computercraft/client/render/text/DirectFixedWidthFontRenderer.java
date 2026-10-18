@@ -133,7 +133,8 @@ public final class DirectFixedWidthFontRenderer {
     }
 
     public static void drawString(QuadEmitter emitter, float x, float y, TextBuffer text, TextBuffer textColour, Palette palette) {
-        for (var i = 0; i < text.length(); i++) {
+        var i = 0;
+        while (i < text.length()) {
             var colour = palette.getRenderColours(getColour(textColour.charAt(i), Colour.BLACK));
 
             int index = text.charAt(i);
@@ -142,7 +143,7 @@ public final class DirectFixedWidthFontRenderer {
 
             // A CJK glyph occupies two cells, the second of which holds a '\0' placeholder. We've already drawn the
             // whole glyph, so skip over that cell.
-            if (index > 255) i++;
+            i += index > 255 ? 2 : 1;
         }
 
     }
