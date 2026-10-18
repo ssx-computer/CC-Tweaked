@@ -19,7 +19,10 @@ public class NetworkedTerminal extends Terminal {
     }
 
     synchronized TerminalState write() {
-        var contents = new byte[width * height * 2 + Palette.PALETTE_SIZE * 3];
+        // Each cell is stored as a two byte character (big endian) followed by a single byte colour. We use two bytes
+        // per character, as terminal cells may hold a full Unicode code point (e.g. a CJK ideograph), rather than just
+        // a single byte character.
+        var contents = new byte[width * height * 3 + Palette.PALETTE_SIZE * 3];
         var idx = 0;
 
         for (var y = 0; y < height; y++) {
@@ -27,7 +30,11 @@ public class NetworkedTerminal extends Terminal {
             var textColour = this.textColour[y];
             var backColour = backgroundColour[y];
 
-            for (var x = 0; x < width; x++) contents[idx++] = (byte) (text.charAt(x) & 0xFF);
+            for (var x = 0; x < width; x++) {
+                var c = text.charAt(x);
+                contents[idx++] = (byte) (c >> 8);
+                contents[idx++] = (byte) c;
+            }
             for (var x = 0; x < width; x++) {
                 contents[idx++] = (byte) (getColour(backColour.charAt(x), Colour.BLACK) << 4 | getColour(textColour.charAt(x), Colour.WHITE));
             }
@@ -57,7 +64,11 @@ public class NetworkedTerminal extends Terminal {
             var textColour = this.textColour[y];
             var backColour = backgroundColour[y];
 
-            for (var x = 0; x < width; x++) text.setChar(x, (char) (contents[idx++] & 0xFF));
+            for (var x = 0; x < width; x++) {
+                var hi = contents[idx++] & 0xFF;
+                var lo = contents[idx++] & 0xFF;
+                text.setChar(x, (char) (hi << 8 | lo));
+            }
             for (var x = 0; x < width; x++) {
                 var colour = contents[idx++];
                 backColour.setChar(x, BASE_16.charAt((colour >> 4) & 0xF));

@@ -27,6 +27,10 @@ public class TerminalState {
     final boolean cursorBlink;
     final int cursorBgColour;
     final int cursorFgColour;
+    /**
+     * The packed terminal contents: for each cell a two byte character (big endian) followed by a single byte colour,
+     * then the RGB values of the palette.
+     */
     final byte[] contents;
 
     TerminalState(
