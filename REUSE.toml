@@ -71,8 +71,10 @@ path = [
 
 [[annotations]]
 # term_font.png mixes the original CCPL bitmap glyphs (the craftos symbols and block characters, upscaled 4x) with
-# Latin glyphs rendered from Cascadia Mono, which is licensed under the SIL Open Font License 1.1.
-SPDX-FileCopyrightText = "2011 Daniel Ratcliffe; Cascadia Code project authors"
+# Latin glyphs rendered from Cascadia Mono, CJK glyphs rendered from Noto Sans SC, and a handful of fallback glyphs
+# rendered from GNU Unifont. Cascadia Mono, Noto Sans SC and GNU Unifont are all licensed under the SIL Open Font
+# License 1.1 (Unifont is dual-licensed, and used here under OFL-1.1).
+SPDX-FileCopyrightText = "2011 Daniel Ratcliffe; Cascadia Code project authors; Unifont contributors; Noto Sans SC contributors"
 SPDX-License-Identifier = "LicenseRef-CCPL AND OFL-1.1"
 path = "projects/core/src/main/resources/assets/computercraft/textures/gui/term_font.png"
 

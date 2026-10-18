@@ -9,14 +9,15 @@
 #define FONT_HEIGHT 9.0
 
 // The glyphs themselves are stored in the font atlas at 4x resolution: each glyph is 24x36, the cells are spaced
-// 32x44 apart, with a 4px offset. The atlas is not square (592x784), so U and V are normalised separately.
+// 32x44 apart, with a 4px offset. The atlas also has a region of CJK glyphs below the ASCII ones, so it is not square
+// (896x5613), and U and V are normalised separately.
 #define GLYPH_WIDTH 24.0
 #define GLYPH_HEIGHT 36.0
 #define GLYPH_OFFSET 4.0
 #define GLYPH_PITCH_X 32.0
 #define GLYPH_PITCH_Y 44.0
-#define FONT_TEXTURE_WIDTH 592.0
-#define FONT_TEXTURE_HEIGHT 784.0
+#define FONT_TEXTURE_WIDTH 896.0
+#define FONT_TEXTURE_HEIGHT 5613.0
 
 layout(location = 0) uniform sampler2D Font;
 layout(location = 1) uniform usamplerBuffer Tbo;

@@ -48,6 +48,16 @@ public final class DirectFixedWidthFontRenderer {
         // Short circuit to avoid the common case - the texture should be blank here after all.
         if (index == '\0' || index == ' ') return;
 
+        if (index > 255) {
+            // Anything outside of Latin-1 must be a CJK codepoint to have a glyph; otherwise fall back to '?'.
+            var slot = cjkSlot(index);
+            if (slot >= 0) {
+                drawCjkChar(emitter, x, y, slot, colour);
+                return;
+            }
+            index = '?';
+        }
+
         var column = index % 16;
         var row = index / 16;
 
@@ -59,6 +69,29 @@ public final class DirectFixedWidthFontRenderer {
         quad(
             emitter, x, y, x + FONT_WIDTH, y + FONT_HEIGHT, colour,
             xStart / WIDTH, yStart / HEIGHT, (xStart + GLYPH_WIDTH) / WIDTH, (yStart + GLYPH_HEIGHT) / HEIGHT
+        );
+    }
+
+    /**
+     * Draw a wide (two cell) CJK glyph, starting at the left edge of {@code x}.
+     *
+     * @param emitter The emitter to draw to.
+     * @param x       The left edge of the glyph, in logical pixels.
+     * @param y       The top edge of the glyph, in logical pixels.
+     * @param slot    The atlas slot of this glyph, as returned by {@link #cjkSlot(int)}.
+     * @param colour  The colour of the glyph.
+     */
+    private static void drawCjkChar(QuadEmitter emitter, float x, float y, int slot, int colour) {
+        var column = slot % CJK_COLUMNS;
+        var row = slot / CJK_COLUMNS;
+
+        // As elsewhere, the quad is the glyph's logical size, while the UVs cover the exact block of the atlas.
+        var xStart = 1 + column * CJK_PITCH_X;
+        var yStart = CJK_REGION_Y + 1 + row * CJK_PITCH_Y;
+
+        quad(
+            emitter, x, y, x + CJK_GLYPH_WIDTH, y + CJK_GLYPH_HEIGHT, colour,
+            xStart / WIDTH, yStart / HEIGHT, (xStart + CJK_GLYPH_WIDTH) / WIDTH, (yStart + CJK_GLYPH_HEIGHT) / HEIGHT
         );
     }
 
@@ -104,8 +137,12 @@ public final class DirectFixedWidthFontRenderer {
             var colour = palette.getRenderColours(getColour(textColour.charAt(i), Colour.BLACK));
 
             int index = text.charAt(i);
-            if (index > 255) index = '?';
+            if (index > 255 && cjkSlot(index) < 0) index = '?';
             drawChar(emitter, x + i * FONT_WIDTH, y, index, colour);
+
+            // A CJK glyph occupies two cells, the second of which holds a '\0' placeholder. We've already drawn the
+            // whole glyph, so skip over that cell.
+            if (index > 255) i++;
         }
 
     }

@@ -39,10 +39,11 @@ public final class FixedWidthFontRenderer {
     public static final int FONT_WIDTH = 6;
 
     // Each glyph is drawn as a 6x9 logical quad, but the texture stores it at 4x resolution: glyphs are 24x36, spaced
-    // 32x44 apart, with a 4px offset. The atlas is therefore not square (592x784), and U and V must be normalised by
-    // the width and height respectively.
-    static final float WIDTH = 592.0f;
-    static final float HEIGHT = 784.0f;
+    // 32x44 apart, with a 4px offset. The atlas also carries a second region of CJK glyphs below the ASCII ones,
+    // making it decidedly not square (896x5613), and so U and V must be normalised by the width and height
+    // respectively.
+    static final float WIDTH = 896.0f;
+    static final float HEIGHT = 5613.0f;
 
     static final int GLYPH_WIDTH = 24;
     static final int GLYPH_HEIGHT = 36;
@@ -56,6 +57,21 @@ public final class FixedWidthFontRenderer {
     static final float BACKGROUND_U2 = 553.0f / WIDTH;
     static final float BACKGROUND_V1 = 742.0f / HEIGHT;
     static final float BACKGROUND_V2 = 745.0f / HEIGHT;
+
+    // Below the ASCII glyphs is a second region holding CJK ideographs. Each glyph occupies two terminal cells: it is
+    // 12x9 logical pixels, packed at a 14x11 pitch with a (1, 1) offset and 64 glyphs to a row. Slots are assigned in
+    // codepoint order across three contiguous ranges (see cjkSlot), so unassigned codepoints still consume a slot.
+    static final int CJK_REGION_Y = 784;
+    static final int CJK_GLYPH_WIDTH = 12;
+    static final int CJK_GLYPH_HEIGHT = 9;
+    static final int CJK_PITCH_X = 14;
+    static final int CJK_PITCH_Y = 11;
+    static final int CJK_COLUMNS = 64;
+
+    // The slot of the first codepoint in each of those ranges.
+    static final int CJK_EXT_A_BASE = 0;
+    static final int CJK_UNIFIED_BASE = 6592;
+    static final int CJK_COMPAT_BASE = 27584;
 
     private static final int BLACK = FastColor.ARGB32.color(255, byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()));
     private static final float Z_OFFSET = 1e-4f;
@@ -75,9 +91,37 @@ public final class FixedWidthFontRenderer {
         return 15 - Terminal.getColour(c, def);
     }
 
+    /**
+     * Find the atlas slot of a CJK codepoint.
+     * <p>
+     * The CJK region stores three codepoint ranges back to back, with no gaps left for unassigned characters.
+     *
+     * @param codepoint The codepoint to look up.
+     * @return The atlas slot, or {@code -1} if this codepoint has no glyph.
+     */
+    static int cjkSlot(int codepoint) {
+        // CJK Unified Ideographs Extension A.
+        if (codepoint >= 0x3400 && codepoint <= 0x4DBF) return CJK_EXT_A_BASE + (codepoint - 0x3400);
+        // CJK Unified Ideographs.
+        if (codepoint >= 0x4E00 && codepoint <= 0x9FFF) return CJK_UNIFIED_BASE + (codepoint - 0x4E00);
+        // CJK Compatibility Ideographs.
+        if (codepoint >= 0xF900 && codepoint <= 0xFAFF) return CJK_COMPAT_BASE + (codepoint - 0xF900);
+        return -1;
+    }
+
     private static void drawChar(QuadEmitter emitter, float x, float y, int index, int colour, int light) {
         // Short circuit to avoid the common case - the texture should be blank here after all.
         if (index == '\0' || index == ' ') return;
+
+        if (index > 255) {
+            // Anything outside of Latin-1 must be a CJK codepoint to have a glyph; otherwise fall back to '?'.
+            var slot = cjkSlot(index);
+            if (slot >= 0) {
+                drawCjkChar(emitter, x, y, slot, colour, light);
+                return;
+            }
+            index = '?';
+        }
 
         var column = index % 16;
         var row = index / 16;
@@ -90,6 +134,30 @@ public final class FixedWidthFontRenderer {
         quad(
             emitter, x, y, x + FONT_WIDTH, y + FONT_HEIGHT, 0, colour,
             xStart / WIDTH, yStart / HEIGHT, (xStart + GLYPH_WIDTH) / WIDTH, (yStart + GLYPH_HEIGHT) / HEIGHT, light
+        );
+    }
+
+    /**
+     * Draw a wide (two cell) CJK glyph, starting at the left edge of {@code x}.
+     *
+     * @param emitter The emitter to draw to.
+     * @param x       The left edge of the glyph, in logical pixels.
+     * @param y       The top edge of the glyph, in logical pixels.
+     * @param slot    The atlas slot of this glyph, as returned by {@link #cjkSlot(int)}.
+     * @param colour  The colour of the glyph.
+     * @param light   The lightmap coordinate.
+     */
+    private static void drawCjkChar(QuadEmitter emitter, float x, float y, int slot, int colour, int light) {
+        var column = slot % CJK_COLUMNS;
+        var row = slot / CJK_COLUMNS;
+
+        // As elsewhere, the quad is the glyph's logical size, while the UVs cover the exact block of the atlas.
+        var xStart = 1 + column * CJK_PITCH_X;
+        var yStart = CJK_REGION_Y + 1 + row * CJK_PITCH_Y;
+
+        quad(
+            emitter, x, y, x + CJK_GLYPH_WIDTH, y + CJK_GLYPH_HEIGHT, 0, colour,
+            xStart / WIDTH, yStart / HEIGHT, (xStart + CJK_GLYPH_WIDTH) / WIDTH, (yStart + CJK_GLYPH_HEIGHT) / HEIGHT, light
         );
     }
 
@@ -139,8 +207,12 @@ public final class FixedWidthFontRenderer {
             var colour = palette.getRenderColours(getColour(textColour.charAt(i), Colour.BLACK));
 
             int index = text.charAt(i);
-            if (index > 255) index = '?';
+            if (index > 255 && cjkSlot(index) < 0) index = '?';
             drawChar(emitter, x + i * FONT_WIDTH, y, index, colour, light);
+
+            // A CJK glyph occupies two cells, the second of which holds a '\0' placeholder. We've already drawn the
+            // whole glyph, so skip over that cell.
+            if (index > 255) i++;
         }
 
     }
