@@ -37,11 +37,9 @@ public abstract class TermMethods {
      */
     @LuaFunction
     public final void write(Coerced<String> text) throws LuaException {
-        var textStr = text.value();
         var terminal = getTerminal();
         synchronized (terminal) {
-            terminal.write(textStr);
-            terminal.setCursorPos(terminal.getCursorX() + textStr.length(), terminal.getCursorY());
+            terminal.write(text.value());
         }
     }
 

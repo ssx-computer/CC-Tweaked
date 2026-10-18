@@ -415,6 +415,95 @@ class TerminalTest {
     }
 
     @Test
+    void testWriteWideCharacter() {
+        var terminal = new Terminal(4, 3, true);
+
+        // U+4E2D (中), encoded as UTF-8. The second cell is a placeholder for the wide character.
+        terminal.write("\u00E4\u00B8\u00AD");
+
+        assertThat(terminal, textMatches(new String[]{
+            "\u4E2D\0  ",
+            "    ",
+            "    ",
+        }));
+        assertEquals(2, terminal.getCursorX());
+        assertEquals(0, terminal.getCursorY());
+    }
+
+    @Test
+    void testWriteWideCharacterFromJavaString() {
+        // A string containing code points rather than bytes must not be decoded a second time.
+        var terminal = new Terminal(4, 3, true);
+        terminal.write("\u4E2D");
+
+        assertThat(terminal, textMatches(new String[]{
+            "\u4E2D\0  ",
+            "    ",
+            "    ",
+        }));
+        assertEquals(2, terminal.getCursorX());
+    }
+
+    @Test
+    void testWriteWideCharacterWraps() {
+        var terminal = new Terminal(4, 3, true);
+
+        // Only one cell remains on the first line, so the wide character is moved to the next one.
+        terminal.write("abc\u00E4\u00B8\u00AD");
+
+        assertThat(terminal, textMatches(new String[]{
+            "abc ",
+            "\u4E2D\0  ",
+            "    ",
+        }));
+        assertEquals(2, terminal.getCursorX());
+        assertEquals(1, terminal.getCursorY());
+    }
+
+    @Test
+    void testWriteWideCharacterWithoutRoom() {
+        var terminal = new Terminal(3, 1, true);
+
+        // A wide character cannot be split across two lines, so is dropped if there is nowhere to wrap to.
+        terminal.write("ab\u00E4\u00B8\u00AD");
+
+        assertThat(terminal, textMatches(new String[]{
+            "ab ",
+        }));
+        assertEquals(4, terminal.getCursorX());
+    }
+
+    @Test
+    void testWriteUtf8Decoding() {
+        var terminal = new Terminal(4, 3, true);
+
+        // U+00E9 (é), encoded as UTF-8. This maps back to the terminal character 0xE9.
+        terminal.write("\u00C3\u00A9");
+
+        assertThat(terminal, textMatches(new String[]{
+            "\u00E9   ",
+            "    ",
+            "    ",
+        }));
+        assertEquals(1, terminal.getCursorX());
+    }
+
+    @Test
+    void testWriteMalformedUtf8FallsBackToLatin1() {
+        var terminal = new Terminal(4, 3, true);
+
+        // A lone lead byte (followed by ASCII) is not valid UTF-8, so is kept as a Latin-1 character.
+        terminal.write("\u00E4 ");
+
+        assertThat(terminal, textMatches(new String[]{
+            "\u00E4   ",
+            "    ",
+            "    ",
+        }));
+        assertEquals(2, terminal.getCursorX());
+    }
+
+    @Test
     void testScrollUp() {
         var callCounter = new CallCounter();
         var terminal = new Terminal(4, 3, true, callCounter);

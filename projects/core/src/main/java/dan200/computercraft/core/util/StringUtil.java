@@ -92,6 +92,97 @@ public final class StringUtil {
         return chr >= 0 && chr <= 255 && chr != 0 && chr != '\r' && chr != '\n';
     }
 
+    /**
+     * The ranges of Unicode code points which are rendered as "wide" (East Asian Wide or Fullwidth), and so should
+     * occupy two terminal cells.
+     * <p>
+     * This is a flattened array of {@code [start, end]} pairs, sorted by {@code start}, covering the East Asian
+     * Wide/Fullwidth ranges within the BMP. Note that several wide ranges (namely CJK Unified Ideographs extensions
+     * B–I and most emoji) live outside the BMP, and so cannot currently be stored in a terminal cell - see
+     * {@link #isWide(int)}.
+     *
+     * @see <a href="https://www.unicode.org/reports/tr11/">Unicode Standard Annex #11</a>
+     */
+    private static final int[] WIDE_RANGES = {
+        0x1100, 0x115F, // Hangul Jamo
+        0x231A, 0x231B, // Watch, hourglass
+        0x2329, 0x232A, // Angle brackets
+        0x23E9, 0x23EC, // Media control symbols
+        0x23F0, 0x23F0, // Alarm clock
+        0x23F3, 0x23F3, // Hourglass
+        0x25FD, 0x25FE, // Small squares
+        0x2614, 0x2615, // Umbrella, hot beverage
+        0x2648, 0x2653, // Zodiac
+        0x267F, 0x267F, // Wheelchair
+        0x2693, 0x2693, // Anchor
+        0x26A1, 0x26A1, // High voltage
+        0x26AA, 0x26AB, // Circles
+        0x26BD, 0x26BE, // Sports
+        0x26C4, 0x26C5, // Snowman, sun
+        0x26CE, 0x26CE, // Ophiuchus
+        0x26D4, 0x26D4, // No entry
+        0x26EA, 0x26EA, // Church
+        0x26F2, 0x26F3, // Fountain, golf
+        0x26F5, 0x26F5, // Sailboat
+        0x26FA, 0x26FA, // Tent
+        0x26FD, 0x26FD, // Fuel pump
+        0x2705, 0x2705, // Check mark
+        0x270A, 0x270B, // Fist, hand
+        0x2728, 0x2728, // Sparkles
+        0x274C, 0x274C, // Cross mark
+        0x274E, 0x274E, // Cross mark
+        0x2753, 0x2755, // Question, exclamation
+        0x2757, 0x2757, // Exclamation
+        0x2795, 0x2797, // Plus, minus, divide
+        0x27B0, 0x27B0, // Curly loop
+        0x27BF, 0x27BF, // Double curly loop
+        0x2B1B, 0x2B1C, // Squares
+        0x2B50, 0x2B50, // Star
+        0x2B55, 0x2B55, // Circle
+        0x2E80, 0x303E, // CJK Radicals, Kangxi Radicals, CJK Symbols and Punctuation
+        0x3041, 0x33FF, // Kana, Bopomofo, Hangul Compatibility Jamo, Kanbun, Enclosed CJK, CJK Compatibility
+        0x3400, 0x4DBF, // CJK Unified Ideographs Extension A
+        0x4E00, 0x9FFF, // CJK Unified Ideographs
+        0xA000, 0xA4CF, // Yi Syllables and Radicals
+        0xA960, 0xA97C, // Hangul Jamo Extended-A
+        0xAC00, 0xD7A3, // Hangul Syllables
+        0xD7B0, 0xD7FF, // Hangul Jamo Extended-B
+        0xF900, 0xFAFF, // CJK Compatibility Ideographs
+        0xFE10, 0xFE19, // Vertical Forms
+        0xFE30, 0xFE6F, // CJK Compatibility Forms, Small Form Variants
+        0xFF00, 0xFF60, // Fullwidth Forms
+        0xFFE0, 0xFFE6, // Fullwidth Signs
+    };
+
+    /**
+     * Check if a Unicode code point is "wide" - that is, whether it should occupy two terminal cells.
+     * <p>
+     * This covers the East Asian Wide and Fullwidth ranges (CJK ideographs, kana, hangul, fullwidth forms and a
+     * number of symbols and emoji). Code points outside the BMP are not handled, as they cannot be stored in a
+     * {@link dan200.computercraft.core.terminal.TextBuffer} yet.
+     *
+     * @param codepoint The code point to check.
+     * @return Whether this code point should be rendered across two cells.
+     */
+    public static boolean isWide(int codepoint) {
+        // Binary search over the flattened [start, end] ranges.
+        var low = 0;
+        var high = WIDE_RANGES.length / 2 - 1;
+        while (low <= high) {
+            var mid = (low + high) >>> 1;
+            var start = WIDE_RANGES[mid * 2];
+            var end = WIDE_RANGES[mid * 2 + 1];
+            if (codepoint < start) {
+                high = mid - 1;
+            } else if (codepoint > end) {
+                low = mid + 1;
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean isAllowedInLabel(char c) {
         // Limit to ASCII and latin1, excluding '§' (Minecraft's formatting character).
         return (c >= ' ' && c <= '~') || (c >= 161 && c <= 255 && c != 167);
