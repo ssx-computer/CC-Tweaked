@@ -60,7 +60,8 @@ vec2 cjk_corner(int c) {
 }
 
 vec4 recolour(vec4 texture, int colour) {
-    return vec4(texture.rgb * Palette[colour], texture.rgba);
+    // The font atlas stores each glyph as white RGB plus an alpha mask, so the coverage is the alpha channel.
+    return vec4(texture.rgb * Palette[colour], texture.a);
 }
 
 void main() {
