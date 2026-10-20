@@ -81,6 +81,15 @@ public class MonitorTextureBufferShader extends ShaderInstance {
         return uniform;
     }
 
+    /**
+     * Write the current contents of the terminal to a buffer, ready to be copied to our TBO.
+     * <p>
+     * Each cell is stored as three 16-bit values (6 bytes) - character, foreground, background. Storing the character
+     * as 16 bits (rather than a single byte) lets us represent codepoints outside of Latin-1, such as CJK ideographs.
+     *
+     * @param buffer   The buffer to write to.
+     * @param terminal The current terminal.
+     */
     public static void setTerminalData(ByteBuffer buffer, Terminal terminal) {
         int width = terminal.getWidth(), height = terminal.getHeight();
 
@@ -88,10 +97,10 @@ public class MonitorTextureBufferShader extends ShaderInstance {
         for (var y = 0; y < height; y++) {
             TextBuffer text = terminal.getLine(y), textColour = terminal.getTextColourLine(y), background = terminal.getBackgroundColourLine(y);
             for (var x = 0; x < width; x++) {
-                buffer.put(pos, (byte) (text.charAt(x) & 0xFF));
-                buffer.put(pos + 1, (byte) getColour(textColour.charAt(x), Colour.WHITE));
-                buffer.put(pos + 2, (byte) getColour(background.charAt(x), Colour.BLACK));
-                pos += 3;
+                buffer.putShort(pos, (short) text.charAt(x));
+                buffer.putShort(pos + 2, (short) getColour(textColour.charAt(x), Colour.WHITE));
+                buffer.putShort(pos + 4, (short) getColour(background.charAt(x), Colour.BLACK));
+                pos += 6;
             }
         }
 

@@ -145,7 +145,9 @@ public class MonitorBlockEntityRenderer implements BoundedBlockEntityRenderer<Mo
         switch (renderType) {
             case TBO -> {
                 if (redraw) {
-                    var terminalBuffer = getBuffer(width * height * 3);
+                    // Each cell is stored as 6 bytes: a 16-bit character (or its codepoint, for wide characters),
+                    // followed by the foreground and background colours.
+                    var terminalBuffer = getBuffer(width * height * 6);
                     MonitorTextureBufferShader.setTerminalData(terminalBuffer, terminal);
                     DirectBuffers.setBufferData(GL31.GL_TEXTURE_BUFFER, renderState.tboBuffer, terminalBuffer, GL20.GL_STATIC_DRAW);
 

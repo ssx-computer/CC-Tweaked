@@ -58,7 +58,8 @@ public class MonitorRenderState implements ClientMonitor.RenderState {
                 DirectBuffers.setEmptyBufferData(GL31.GL_TEXTURE_BUFFER, tboBuffer, GL15.GL_STATIC_DRAW);
                 tboTexture = GlStateManager._genTexture();
                 GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, tboTexture);
-                GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL30.GL_R8UI, tboBuffer);
+                // Each texel is a 16-bit character or colour, so that codepoints outside of Latin-1 survive the trip.
+                GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL30.GL_R16UI, tboBuffer);
                 GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, 0);
 
                 tboUniform = DirectBuffers.createBuffer();
