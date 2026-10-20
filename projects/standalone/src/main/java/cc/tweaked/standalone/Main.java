@@ -331,10 +331,11 @@ public class Main {
         glTextureParameteri(fontTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glBindTextureUnit(TEXTURE_FONT, fontTexture);
 
-        // Create a texture and backing buffer for our TBO and bind it.
+        // Create a texture and backing buffer for our TBO and bind it. Each texel is a 16-bit character or colour, so
+        // that codepoints outside of Latin-1 (and so CJK ideographs) survive the trip.
         var termBuffer = gl.createBuffer("Terminal TBO");
         var termTexture = gl.createTexture(GL_TEXTURE_BUFFER, "Terminal TBO");
-        glTextureBuffer(termTexture, GL_R8UI, termBuffer);
+        glTextureBuffer(termTexture, GL_R16UI, termBuffer);
         glBindTextureUnit(TEXTURE_TBO, termTexture);
 
         // Load the main terminal shader.
@@ -384,7 +385,7 @@ public class Main {
                 needRedraw = true;
 
                 try (var stack = MemoryStack.stackPush()) {
-                    var buffer = stack.malloc(terminal.getWidth() * terminal.getHeight() * 3);
+                    var buffer = stack.malloc(terminal.getWidth() * terminal.getHeight() * 6);
                     writeTerminalContents(buffer, terminal);
                     glNamedBufferData(termBuffer, buffer, GL_STATIC_DRAW);
                 }
@@ -446,8 +447,9 @@ public class Main {
     /**
      * Write the current contents of the terminal to a buffer, ready to be copied to our TBO.
      * <p>
-     * Each cell is stored as three packed bytes - character, foreground, background. This is then bound to the
-     * {@code Tbo} uniform within the shader, and read to lookup specific the current pixel.
+     * Each cell is stored as three 16-bit values (6 bytes) - character, foreground, background. Storing the character
+     * as 16 bits (rather than a single byte) lets us represent codepoints outside of Latin-1, such as CJK ideographs.
+     * This is then bound to the {@code Tbo} uniform within the shader, and read to lookup specific the current pixel.
      *
      * @param buffer   The buffer to write to.
      * @param terminal The current terminal.
@@ -459,10 +461,10 @@ public class Main {
         for (var y = 0; y < height; y++) {
             TextBuffer text = terminal.getLine(y), textColour = terminal.getTextColourLine(y), background = terminal.getBackgroundColourLine(y);
             for (var x = 0; x < width; x++) {
-                buffer.put(pos, (byte) (text.charAt(x) & 0xFF));
-                buffer.put(pos + 1, (byte) (15 - Terminal.getColour(textColour.charAt(x), Colour.WHITE)));
-                buffer.put(pos + 2, (byte) (15 - Terminal.getColour(background.charAt(x), Colour.BLACK)));
-                pos += 3;
+                buffer.putShort(pos, (short) text.charAt(x));
+                buffer.putShort(pos + 2, (short) (15 - Terminal.getColour(textColour.charAt(x), Colour.WHITE)));
+                buffer.putShort(pos + 4, (short) (15 - Terminal.getColour(background.charAt(x), Colour.BLACK)));
+                pos += 6;
             }
         }
 

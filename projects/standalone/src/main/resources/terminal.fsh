@@ -19,6 +19,13 @@
 #define FONT_TEXTURE_WIDTH 896.0
 #define FONT_TEXTURE_HEIGHT 5613.0
 
+// Below the ASCII glyphs is a second region holding CJK ideographs. Unlike the ASCII glyphs, these are stored at 1x
+// resolution - each glyph is 12x9 (i.e. two terminal cells wide), with a 1px offset and a 14x11 pitch.
+#define CJK_REGION_Y 784.0
+#define CJK_PITCH_X 14.0
+#define CJK_PITCH_Y 11.0
+#define CJK_COLUMNS 64
+
 layout(location = 0) uniform sampler2D Font;
 layout(location = 1) uniform usamplerBuffer Tbo;
 
@@ -41,6 +48,17 @@ vec2 texture_corner(int index) {
     return vec2(x, y);
 }
 
+// Whether this codepoint has a glyph in the CJK region of the atlas.
+bool is_cjk(int c) {
+    return (c >= 0x3400 && c <= 0x4DBF) || (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0xF900 && c <= 0xFAFF);
+}
+
+// The top-left corner of this codepoint's glyph within the atlas.
+vec2 cjk_corner(int c) {
+    int slot = c <= 0x4DBF ? c - 0x3400 : (c <= 0x9FFF ? 6592 + c - 0x4E00 : 27584 + c - 0xF900);
+    return vec2(1.0 + float(slot % CJK_COLUMNS) * CJK_PITCH_X, CJK_REGION_Y + 1.0 + float(slot / CJK_COLUMNS) * CJK_PITCH_Y);
+}
+
 vec4 recolour(vec4 texture, int colour) {
     return vec4(texture.rgb * Palette[colour], texture.rgba);
 }
@@ -60,9 +78,33 @@ void main() {
     int fg = int(texelFetch(Tbo, index + 1).r);
     int bg = int(texelFetch(Tbo, index + 2).r);
 
-    // Our position within the cell, in logical (6x9) pixels, rescaled to cover the 24x36 region of the glyph.
-    vec2 pos = (term_pos - corner) * vec2(FONT_WIDTH, FONT_HEIGHT) * vec2(GLYPH_WIDTH / FONT_WIDTH, GLYPH_HEIGHT / FONT_HEIGHT);
-    vec4 charTex = recolour(texture(Font, (texture_corner(character) + pos) / vec2(FONT_TEXTURE_WIDTH, FONT_TEXTURE_HEIGHT)), fg);
+    // Our position within the cell, in logical (6x9) pixels.
+    vec2 local = (term_pos - corner) * vec2(FONT_WIDTH, FONT_HEIGHT);
+
+    // A wide (CJK) glyph occupies two cells: the left one holds the codepoint, the right one a '\0' placeholder. If we
+    // are drawing such a placeholder then steal the glyph from our left neighbour and shift our horizontal position
+    // across by a whole cell, so that the two cells together draw the full 12x9 glyph.
+    int glyph = character;
+    float glyphX = local.x;
+    if (character == 0 && cell.x > 0) {
+        int left = int(texelFetch(Tbo, 3 * (clamp(cell.x - 1, 0, Width - 1) + clamp(cell.y, 0, Height - 1) * Width)).r);
+        if (is_cjk(left)) {
+            glyph = left;
+            glyphX += FONT_WIDTH;
+        }
+    }
+
+    // Our position within the cell, rescaled to cover the 24x36 region of an ASCII glyph.
+    vec2 pos = local * vec2(GLYPH_WIDTH / FONT_WIDTH, GLYPH_HEIGHT / FONT_HEIGHT);
+
+    vec4 charTex;
+    if (is_cjk(glyph)) {
+        // The CJK glyphs are stored at 1x, so one logical pixel covers exactly one texel of the atlas.
+        charTex = recolour(texture(Font, (cjk_corner(glyph) + vec2(glyphX, local.y)) / vec2(FONT_TEXTURE_WIDTH, FONT_TEXTURE_HEIGHT)), fg);
+    } else {
+        // Fall back to '?' (63) for any codepoint without a glyph in the ASCII region, as the monitor renderer does.
+        charTex = recolour(texture(Font, (texture_corner(glyph <= 255 ? glyph : 63) + pos) / vec2(FONT_TEXTURE_WIDTH, FONT_TEXTURE_HEIGHT)), fg);
+    }
 
     // Applies the cursor on top of the current character if we're blinking and in the current cursor's cell. We do it
     // this funky way to avoid branches.
