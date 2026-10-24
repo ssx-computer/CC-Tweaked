@@ -98,18 +98,30 @@ void main() {
     // Our position within the cell, rescaled to cover the 24x36 region of an ASCII glyph.
     vec2 pos = local * vec2(GLYPH_WIDTH / FONT_WIDTH, GLYPH_HEIGHT / FONT_HEIGHT);
 
+    // We sample the atlas with textureGrad() and gradients derived from the *continuous* `fontPos` (the interpolated
+    // vertex UV), rather than letting the driver derive them from the texture coordinate itself. `local`/`pos` are
+    // built from `floor(term_pos)` and so wrap at every cell boundary; a 2x2 fragment quad straddling such a boundary
+    // then reports a huge implicit derivative, and the driver picks a much coarser mip for it - a fuzzy one pixel seam
+    // along every cell edge. `fontPos` is continuous, so its derivatives (and hence the mip level) stay put.
+    vec2 fontTexelSize = vec2(FONT_TEXTURE_WIDTH, FONT_TEXTURE_HEIGHT);
+    vec2 asciiScale = vec2(GLYPH_WIDTH / FONT_WIDTH, GLYPH_HEIGHT / FONT_HEIGHT) / fontTexelSize;
+    vec2 asciiPdx = dFdx(fontPos) * asciiScale;
+    vec2 asciiPdy = dFdy(fontPos) * asciiScale;
+    vec2 cjkPdx = dFdx(fontPos) / fontTexelSize;
+    vec2 cjkPdy = dFdy(fontPos) / fontTexelSize;
+
     vec4 charTex;
     if (is_cjk(glyph)) {
         // The CJK glyphs are stored at 1x, so one logical pixel covers exactly one texel of the atlas.
-        charTex = recolour(texture(Font, (cjk_corner(glyph) + vec2(glyphX, local.y)) / vec2(FONT_TEXTURE_WIDTH, FONT_TEXTURE_HEIGHT)), fg);
+        charTex = recolour(textureGrad(Font, (cjk_corner(glyph) + vec2(glyphX, local.y)) / fontTexelSize, cjkPdx, cjkPdy), fg);
     } else {
         // Fall back to '?' (63) for any codepoint without a glyph in the ASCII region, as the monitor renderer does.
-        charTex = recolour(texture(Font, (texture_corner(glyph <= 255 ? glyph : 63) + pos) / vec2(FONT_TEXTURE_WIDTH, FONT_TEXTURE_HEIGHT)), fg);
+        charTex = recolour(textureGrad(Font, (texture_corner(glyph <= 255 ? glyph : 63) + pos) / fontTexelSize, asciiPdx, asciiPdy), fg);
     }
 
     // Applies the cursor on top of the current character if we're blinking and in the current cursor's cell. We do it
     // this funky way to avoid branches.
-    vec4 cursorTex = recolour(texture(Font, (texture_corner(95) + pos) / vec2(FONT_TEXTURE_WIDTH, FONT_TEXTURE_HEIGHT)), CursorColour); // 95 = '_'
+    vec4 cursorTex = recolour(textureGrad(Font, (texture_corner(95) + pos) / fontTexelSize, asciiPdx, asciiPdy), CursorColour); // 95 = '_'
     vec4 img = mix(charTex, cursorTex, cursorTex.a * float(CursorBlink) * (CursorPos == cell ? 1.0 : 0.0));
 
     fragColor = vec4(mix(Palette[bg], img.rgb, img.a * mult), 1.0);
