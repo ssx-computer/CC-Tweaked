@@ -188,12 +188,60 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
     local w = term.getSize()
     local sx = term.getCursorPos()
 
+    -- Characters outside of CC's charset - such as CJK ideographs - are sent to us as UTF-8, so a single character
+    -- may span several bytes and occupy two terminal cells. These helpers let us move the cursor by whole characters,
+    -- rather than bytes, and work out how many cells a line occupies.
+
+    -- The length, in bytes, of the character starting at byte `i` of `s`.
+    local function charLen(s, i)
+        local b = string.byte(s, i)
+        if not b or b < 0x80 then
+            return 1
+        elseif b >= 0xF0 then
+            return 4
+        elseif b >= 0xE0 then
+            return 3
+        elseif b >= 0xC0 then
+            return 2
+        else
+            -- A stray continuation byte. Treat it as a character of its own, so that we always make progress.
+            return 1
+        end
+    end
+
+    -- The index of the first byte of the character which ends at byte `p` of `s`.
+    local function charStart(s, p)
+        while p > 1 do
+            local b = string.byte(s, p)
+            if not b or b < 0x80 or b >= 0xC0 then break end
+            p = p - 1
+        end
+        return p
+    end
+
+    -- The number of terminal cells occupied by the bytes `from` to `to` of `s`. Every multi-byte character we are sent
+    -- is a wide one, and so occupies two cells, so we need only inspect the lead byte of each character.
+    local function cellsOf(s, from, to)
+        local n = 0
+        for i = from, to do
+            local b = string.byte(s, i)
+            if b and b < 0x80 then
+                n = n + 1
+            elseif b and b >= 0xC0 then
+                n = n + 2
+            end
+        end
+        return n
+    end
+
     local function redraw(_bClear)
-        local cursor_pos = nPos - nScroll
-        if sx + cursor_pos >= w then
-            -- We've moved beyond the RHS, ensure we're on the edge.
-            nScroll = sx + nPos - w
-        elseif cursor_pos < 0 then
+        local cursor_pos = cellsOf(sLine, nScroll + 1, nPos)
+        if sx + cursor_pos >= w and nScroll < nPos then
+            -- We've moved beyond the RHS, so scroll right, dropping whole characters, until the cursor is on screen.
+            repeat
+                nScroll = nScroll + charLen(sLine, nScroll + 1)
+            until nScroll >= nPos or sx + cellsOf(sLine, nScroll + 1, nPos) < w
+        elseif nScroll > nPos then
             -- We've moved beyond the LHS, ensure we're on the edge.
             nScroll = nPos
         end
@@ -202,7 +250,7 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
         term.setCursorPos(sx, cy)
         local sReplace = _bClear and " " or _sReplaceChar
         if sReplace then
-            term.write(string.rep(sReplace, math.max(#sLine - nScroll, 0)))
+            term.write(string.rep(sReplace, cellsOf(sLine, nScroll + 1, #sLine)))
         else
             term.write(string.sub(sLine, nScroll + 1))
         end
@@ -217,7 +265,7 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
                 term.setBackgroundColor(colors.gray)
             end
             if sReplace then
-                term.write(string.rep(sReplace, #sCompletion))
+                term.write(string.rep(sReplace, cellsOf(sCompletion, 1, #sCompletion)))
             else
                 term.write(sCompletion)
             end
@@ -227,7 +275,7 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
             end
         end
 
-        term.setCursorPos(sx + nPos - nScroll, cy)
+        term.setCursorPos(sx + cellsOf(sLine, nScroll + 1, nPos), cy)
     end
 
     local function clear()
@@ -258,7 +306,7 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
             -- Typed key
             clear()
             sLine = string.sub(sLine, 1, nPos) .. param .. string.sub(sLine, nPos + 1)
-            nPos = nPos + 1
+            nPos = nPos + #param
             recomplete()
             redraw()
 
@@ -284,7 +332,7 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
                 -- Left
                 if nPos > 0 then
                     clear()
-                    nPos = nPos - 1
+                    nPos = charStart(sLine, nPos) - 1
                     recomplete()
                     redraw()
                 end
@@ -294,7 +342,7 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
                 if nPos < #sLine then
                     -- Move right
                     clear()
-                    nPos = nPos + 1
+                    nPos = nPos + charLen(sLine, nPos + 1)
                     recomplete()
                     redraw()
                 else
@@ -356,9 +404,13 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
                 -- Backspace
                 if nPos > 0 then
                     clear()
-                    sLine = string.sub(sLine, 1, nPos - 1) .. string.sub(sLine, nPos + 1)
-                    nPos = nPos - 1
-                    if nScroll > 0 then nScroll = nScroll - 1 end
+                    local nStart = charStart(sLine, nPos)
+                    sLine = string.sub(sLine, 1, nStart - 1) .. string.sub(sLine, nPos + 1)
+                    nPos = nStart - 1
+                    if nScroll > 0 then
+                        -- Keep the window in the same position within the line.
+                        nScroll = math.max(charStart(sLine, math.min(nScroll, #sLine)) - 1, 0)
+                    end
                     recomplete()
                     redraw()
                 end
@@ -376,7 +428,8 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
                 -- Delete
                 if nPos < #sLine then
                     clear()
-                    sLine = string.sub(sLine, 1, nPos) .. string.sub(sLine, nPos + 2)
+                    local nLen = charLen(sLine, nPos + 1)
+                    sLine = string.sub(sLine, 1, nPos) .. string.sub(sLine, nPos + nLen + 1)
                     recomplete()
                     redraw()
                 end
@@ -399,8 +452,16 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
         elseif sEvent == "mouse_click" or sEvent == "mouse_drag" and param == 1 then
             local _, cy = term.getCursorPos()
             if param1 >= sx and param1 <= w and param2 == cy then
-                -- Ensure we don't scroll beyond the current line
-                nPos = math.min(math.max(nScroll + param1 - sx, 0), #sLine)
+                -- Find the byte position of the character which was clicked on, ensuring we don't scroll beyond the
+                -- current line, and that we land on a character boundary.
+                local nTarget, nCells, nStop = math.max(param1 - sx, 0), 0, nScroll
+                while nStop < #sLine do
+                    local nLen = charLen(sLine, nStop + 1)
+                    local nWidth = cellsOf(sLine, nStop + 1, nStop + nLen)
+                    if nCells + nWidth > nTarget then break end
+                    nCells, nStop = nCells + nWidth, nStop + nLen
+                end
+                nPos = math.min(nStop, #sLine)
                 redraw()
             end
 
