@@ -50,6 +50,12 @@ public class TerminalWidget extends AbstractWidget {
     private float rebootTimer = -1;
     private float shutdownTimer = -1;
 
+    /**
+     * The high surrogate of a character outside the BMP (such as an emoji), if we're waiting for the matching low
+     * surrogate. Minecraft delivers such characters as two separate {@link #charTyped(char, int)} calls.
+     */
+    private char pendingHighSurrogate = 0;
+
     public TerminalWidget(Terminal terminal, UserComputerInput computerInput, ClientComputerActions computerActions, int x, int y) {
         super(x, y, terminal.getWidth() * FONT_WIDTH + MARGIN * 2, terminal.getHeight() * FONT_HEIGHT + MARGIN * 2, DESCRIPTION);
 
@@ -65,6 +71,21 @@ public class TerminalWidget extends AbstractWidget {
 
     @Override
     public boolean charTyped(char ch, int modifiers) {
+        // Minecraft delivers characters outside the BMP as a high surrogate, followed by a low one. Buffer the high
+        // surrogate, so that we can combine the pair into a single code point.
+        if (Character.isHighSurrogate(ch)) {
+            pendingHighSurrogate = ch;
+            return true;
+        }
+
+        if (Character.isLowSurrogate(ch) && pendingHighSurrogate != 0) {
+            var codepoint = Character.toCodePoint(pendingHighSurrogate, ch);
+            pendingHighSurrogate = 0;
+            computerInput.codepointTyped(codepoint);
+            return true;
+        }
+
+        pendingHighSurrogate = 0;
         computerInput.codepointTyped(ch);
         return true;
     }
@@ -185,6 +206,7 @@ public class TerminalWidget extends AbstractWidget {
 
         if (!focused) {
             computerInput.releaseInputs();
+            pendingHighSurrogate = 0;
             shutdownTimer = terminateTimer = rebootTimer = -1;
         }
     }

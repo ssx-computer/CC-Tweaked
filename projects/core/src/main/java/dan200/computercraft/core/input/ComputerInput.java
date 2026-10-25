@@ -33,10 +33,11 @@ public interface ComputerInput {
     /**
      * Type a character on the computer.
      *
-     * @param chr The character to type.
-     * @see StringUtil#isTypableChar(byte)
+     * @param codepoint The Unicode code point to type. This may be any code point, including ones outside of CC's
+     *                  charset (such as CJK ideographs).
+     * @see StringUtil#unicodeToTerminal(int)
      */
-    void charTyped(byte chr);
+    void charTyped(int codepoint);
 
     /**
      * Paste a string.

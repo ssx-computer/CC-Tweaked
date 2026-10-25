@@ -5,9 +5,11 @@
 package dan200.computercraft.core.input;
 
 import dan200.computercraft.core.computer.Computer;
+import dan200.computercraft.core.util.StringUtil;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A {@link ComputerInput} that queues events on the computer.
@@ -34,8 +36,19 @@ public final class EventComputerInput implements ComputerInput {
     }
 
     @Override
-    public void charTyped(byte chr) {
-        receiver.queueEvent("char", new Object[]{ new byte[]{ chr } });
+    public void charTyped(int codepoint) {
+        // Characters in CC's charset (which includes all of ASCII and Latin-1) are passed through as a single byte.
+        var terminalChar = StringUtil.unicodeToTerminal(codepoint);
+        if (StringUtil.isTypableChar(terminalChar)) {
+            receiver.queueEvent("char", new Object[]{ new byte[]{ (byte) terminalChar } });
+            return;
+        }
+
+        // Otherwise, if this is a wide character (such as a CJK ideograph), we send its UTF-8 encoding. The terminal
+        // decodes this back to the code point when the character is written, rendering it across two cells.
+        if (codepoint > 0 && codepoint <= 0xFFFF && StringUtil.isWide(codepoint)) {
+            receiver.queueEvent("char", new Object[]{ Character.toString(codepoint).getBytes(StandardCharsets.UTF_8) });
+        }
     }
 
     @Override

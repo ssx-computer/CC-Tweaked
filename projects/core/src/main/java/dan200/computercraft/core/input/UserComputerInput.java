@@ -66,13 +66,17 @@ public final class UserComputerInput implements ComputerInput {
     }
 
     @Override
-    public void charTyped(byte chr) {
-        delegate.charTyped(chr);
+    public void charTyped(int codepoint) {
+        delegate.charTyped(codepoint);
     }
 
+    /**
+     * Type a character on the computer, identified by its Unicode code point.
+     *
+     * @param codepoint The code point to type.
+     */
     public void codepointTyped(int codepoint) {
-        var terminalChar = StringUtil.unicodeToTerminal(codepoint);
-        if (StringUtil.isTypableChar(terminalChar)) charTyped((byte) terminalChar);
+        charTyped(codepoint);
     }
 
     private static boolean isValidClipboard(ByteBuffer buffer) {
