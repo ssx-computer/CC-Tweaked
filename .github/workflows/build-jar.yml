@@ -34,7 +34,9 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
 
     - name: ⚒️ Build Forge
-      run: ./gradlew :forge:build --no-daemon
+      # Minecraft 的游戏内测试由 main-ci 工作流负责（它会单独跑 runGametest）。它们在 CI 上相当不稳定
+      # （尤其是 inventory_test.double_chest_size），而这里只负责打包，不该被偶发失败堵住发布。
+      run: ./gradlew :forge:build --no-daemon -x runGametest
 
     - name: 📦 Find Forge JAR
       id: find-forge-jar
