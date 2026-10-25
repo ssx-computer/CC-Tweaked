@@ -9,15 +9,15 @@
 #define FONT_HEIGHT 9.0
 
 // The glyphs themselves are stored in the font atlas at 4x resolution: each glyph is 24x36, the cells are spaced
-// 32x44 apart, with a 4px offset. The atlas also has a region of CJK glyphs below the ASCII ones, so it is not square
-// (896x5613), and U and V are normalised separately.
+// 32x44 apart, with a 4px offset. The atlas also has two regions of CJK glyphs below the ASCII ones, so it is not
+// square (1792x6977), and U and V are normalised separately.
 #define GLYPH_WIDTH 24.0
 #define GLYPH_HEIGHT 36.0
 #define GLYPH_OFFSET 4.0
 #define GLYPH_PITCH_X 32.0
 #define GLYPH_PITCH_Y 44.0
-#define FONT_TEXTURE_WIDTH 896.0
-#define FONT_TEXTURE_HEIGHT 5613.0
+#define FONT_TEXTURE_WIDTH 1792.0
+#define FONT_TEXTURE_HEIGHT 6977.0
 
 // Below the ASCII glyphs is a second region holding CJK ideographs. Unlike the ASCII glyphs, these are stored at 1x
 // resolution - each glyph is 12x9 (i.e. two terminal cells wide), with a 1px offset and a 14x11 pitch.
@@ -25,6 +25,19 @@
 #define CJK_PITCH_X 14.0
 #define CJK_PITCH_Y 11.0
 #define CJK_COLUMNS 64
+
+// The third region holds the most common characters - see CjkTier2 - at 2x resolution: 24x18 glyphs covering the same
+// 12x9 logical quad as the 1x region, with a 2px offset and a 28x22 pitch. The CPU packs the atlas slot of such a
+// character into the low 15 bits of its TBO entry, with CJK_TIER2_FLAG set, so that we know which region to sample.
+#define CJK_TIER2_REGION_Y 5613.0
+#define CJK_TIER2_GLYPH_WIDTH 24.0
+#define CJK_TIER2_GLYPH_HEIGHT 18.0
+#define CJK_TIER2_PITCH_X 28.0
+#define CJK_TIER2_PITCH_Y 22.0
+#define CJK_TIER2_COLUMNS 64
+#define CJK_TIER2_OFFSET 2.0
+#define CJK_TIER2_FLAG 0x8000
+#define CJK_TIER2_MASK 0x7FFF
 
 layout(location = 0) uniform sampler2D Font;
 layout(location = 1) uniform usamplerBuffer Tbo;
@@ -48,15 +61,35 @@ vec2 texture_corner(int index) {
     return vec2(x, y);
 }
 
-// Whether this codepoint has a glyph in the CJK region of the atlas.
+// Whether a TBO entry carries a tier 2 atlas slot (rather than a codepoint) in its low 15 bits.
+bool is_tier2(int c) {
+    return (c & CJK_TIER2_FLAG) != 0;
+}
+
+// Whether this codepoint has a glyph in the 1x CJK region of the atlas.
 bool is_cjk(int c) {
     return (c >= 0x3400 && c <= 0x4DBF) || (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0xF900 && c <= 0xFAFF);
 }
 
-// The top-left corner of this codepoint's glyph within the atlas.
+// Whether this TBO entry is a wide (two cell) glyph - that is, whether the cell to our right is its '\0' placeholder.
+// Both the 1x CJK codepoints and the tier 2 slot indices are wide. (Note is_cjk() alone is not enough here: a tier 2
+// slot index has its top bit set, so it can land inside the 0x4E00..0x9FFF range.)
+bool is_wide(int c) {
+    return is_tier2(c) || is_cjk(c);
+}
+
+// The top-left corner of this codepoint's glyph within the 1x CJK region of the atlas.
 vec2 cjk_corner(int c) {
     int slot = c <= 0x4DBF ? c - 0x3400 : (c <= 0x9FFF ? 6592 + c - 0x4E00 : 27584 + c - 0xF900);
     return vec2(1.0 + float(slot % CJK_COLUMNS) * CJK_PITCH_X, CJK_REGION_Y + 1.0 + float(slot / CJK_COLUMNS) * CJK_PITCH_Y);
+}
+
+// The top-left corner of a tier 2 slot's glyph within the atlas.
+vec2 tier2_corner(int slot) {
+    return vec2(
+        CJK_TIER2_OFFSET + float(slot % CJK_TIER2_COLUMNS) * CJK_TIER2_PITCH_X,
+        CJK_TIER2_REGION_Y + CJK_TIER2_OFFSET + float(slot / CJK_TIER2_COLUMNS) * CJK_TIER2_PITCH_Y
+    );
 }
 
 vec4 recolour(vec4 texture, int colour) {
@@ -82,14 +115,14 @@ void main() {
     // Our position within the cell, in logical (6x9) pixels.
     vec2 local = (term_pos - corner) * vec2(FONT_WIDTH, FONT_HEIGHT);
 
-    // A wide (CJK) glyph occupies two cells: the left one holds the codepoint, the right one a '\0' placeholder. If we
-    // are drawing such a placeholder then steal the glyph from our left neighbour and shift our horizontal position
-    // across by a whole cell, so that the two cells together draw the full 12x9 glyph.
+    // A wide glyph occupies two cells: the left one holds the character, the right one a '\0' placeholder. If we are
+    // drawing such a placeholder then steal the glyph from our left neighbour and shift our horizontal position across
+    // by a whole cell, so that the two cells together draw the full 12x9 glyph.
     int glyph = character;
     float glyphX = local.x;
     if (character == 0 && cell.x > 0) {
         int left = int(texelFetch(Tbo, 3 * (clamp(cell.x - 1, 0, Width - 1) + clamp(cell.y, 0, Height - 1) * Width)).r);
-        if (is_cjk(left)) {
+        if (is_wide(left)) {
             glyph = left;
             glyphX += FONT_WIDTH;
         }
@@ -109,9 +142,17 @@ void main() {
     vec2 asciiPdy = dFdy(fontPos) * asciiScale;
     vec2 cjkPdx = dFdx(fontPos) / fontTexelSize;
     vec2 cjkPdy = dFdy(fontPos) / fontTexelSize;
+    // The tier 2 glyphs are stored at 2x, so one logical pixel covers two texels of the atlas.
+    vec2 tier2Scale = vec2(2.0) / fontTexelSize;
+    vec2 tier2Pdx = dFdx(fontPos) * tier2Scale;
+    vec2 tier2Pdy = dFdy(fontPos) * tier2Scale;
 
     vec4 charTex;
-    if (is_cjk(glyph)) {
+    if (is_tier2(glyph)) {
+        // The tier 2 glyphs are stored at 2x resolution, so one logical pixel covers two texels of the atlas.
+        vec2 pos2 = vec2(glyphX, local.y) * 2.0;
+        charTex = recolour(textureGrad(Font, (tier2_corner(glyph & CJK_TIER2_MASK) + pos2) / fontTexelSize, tier2Pdx, tier2Pdy), fg);
+    } else if (is_cjk(glyph)) {
         // The CJK glyphs are stored at 1x, so one logical pixel covers exactly one texel of the atlas.
         charTex = recolour(textureGrad(Font, (cjk_corner(glyph) + vec2(glyphX, local.y)) / fontTexelSize, cjkPdx, cjkPdy), fg);
     } else {

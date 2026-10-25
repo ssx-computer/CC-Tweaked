@@ -74,6 +74,10 @@ path = [
 # Latin glyphs rendered from Cascadia Mono, CJK glyphs rendered from Noto Sans SC, and a handful of fallback glyphs
 # rendered from GNU Unifont. Cascadia Mono, Noto Sans SC and GNU Unifont are all licensed under the SIL Open Font
 # License 1.1 (Unifont is dual-licensed, and used here under OFL-1.1).
+#
+# As well as the 4x Latin region and the 12x9 CJK region, the atlas contains a second CJK region holding 2x
+# resolution (24x18) glyphs for the most common characters - the GB2312 level-1 ideographs, the CJK symbols and
+# punctuation block, the fullwidth forms and a handful of Western punctuation - rendered from the same two fonts.
 SPDX-FileCopyrightText = "2011 Daniel Ratcliffe; Cascadia Code project authors; Unifont contributors; Noto Sans SC contributors"
 SPDX-License-Identifier = "LicenseRef-CCPL AND OFL-1.1"
 path = "projects/core/src/main/resources/assets/computercraft/textures/gui/term_font.png"

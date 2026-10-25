@@ -39,11 +39,10 @@ public final class FixedWidthFontRenderer {
     public static final int FONT_WIDTH = 6;
 
     // Each glyph is drawn as a 6x9 logical quad, but the texture stores it at 4x resolution: glyphs are 24x36, spaced
-    // 32x44 apart, with a 4px offset. The atlas also carries a second region of CJK glyphs below the ASCII ones,
-    // making it decidedly not square (896x5613), and so U and V must be normalised by the width and height
-    // respectively.
-    static final float WIDTH = 896.0f;
-    static final float HEIGHT = 5613.0f;
+    // 32x44 apart, with a 4px offset. The atlas also carries two regions of CJK glyphs below the ASCII ones, making it
+    // decidedly not square (1792x6977), and so U and V must be normalised by the width and height respectively.
+    static final float WIDTH = 1792.0f;
+    static final float HEIGHT = 6977.0f;
 
     static final int GLYPH_WIDTH = 24;
     static final int GLYPH_HEIGHT = 36;
@@ -72,6 +71,28 @@ public final class FixedWidthFontRenderer {
     static final int CJK_EXT_A_BASE = 0;
     static final int CJK_UNIFIED_BASE = 6592;
     static final int CJK_COMPAT_BASE = 27584;
+
+    // Below the 1x CJK region is a third region holding 2x resolution ("tier 2") glyphs for the most common
+    // characters - see CjkTier2. These are 24x18, packed at a 28x22 pitch with a (2, 2) offset and 64 glyphs to a row.
+    // They still cover a 12x9 logical quad (the same two cells as the 1x region), just at twice the source resolution.
+    static final int CJK_TIER2_REGION_Y = 5613;
+    static final int CJK_TIER2_GLYPH_WIDTH = 24;
+    static final int CJK_TIER2_GLYPH_HEIGHT = 18;
+    static final int CJK_TIER2_PITCH_X = 28;
+    static final int CJK_TIER2_PITCH_Y = 22;
+    static final int CJK_TIER2_COLUMNS = 64;
+    static final int CJK_TIER2_OFFSET = 2;
+
+    /** The number of atlas pixels per logical pixel of a tier 2 glyph. */
+    static final int CJK_TIER2_SCALE = 2;
+
+    /**
+     * The bit set on a character written to the monitor's texture buffer to mark it as a {@linkplain CjkTier2 tier 2}
+     * atlas slot rather than a codepoint.
+     *
+     * @see #toTboCharacter(char)
+     */
+    public static final int TBO_TIER2_FLAG = 0x8000;
 
     private static final int BLACK = FastColor.ARGB32.color(255, byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()), byteColour(Colour.BLACK.getR()));
     private static final float Z_OFFSET = 1e-4f;
@@ -114,7 +135,14 @@ public final class FixedWidthFontRenderer {
         if (index == '\0' || index == ' ') return;
 
         if (index > 255) {
-            // Anything outside of Latin-1 must be a CJK codepoint to have a glyph; otherwise fall back to '?'.
+            // Anything outside of Latin-1 must have a glyph in one of the CJK regions to be drawable; otherwise fall
+            // back to '?'. The 2x region wins, as it covers a subset of the 1x one at a higher resolution.
+            var tier2 = CjkTier2.slot(index);
+            if (tier2 >= 0) {
+                drawCjkTier2Char(emitter, x, y, tier2, colour, light);
+                return;
+            }
+
             var slot = cjkSlot(index);
             if (slot >= 0) {
                 drawCjkChar(emitter, x, y, slot, colour, light);
@@ -159,6 +187,50 @@ public final class FixedWidthFontRenderer {
             emitter, x, y, x + CJK_GLYPH_WIDTH, y + CJK_GLYPH_HEIGHT, 0, colour,
             xStart / WIDTH, yStart / HEIGHT, (xStart + CJK_GLYPH_WIDTH) / WIDTH, (yStart + CJK_GLYPH_HEIGHT) / HEIGHT, light
         );
+    }
+
+    /**
+     * Draw a wide (two cell) tier 2 (2x resolution) glyph, starting at the left edge of {@code x}.
+     * <p>
+     * The quad is the same 12x9 logical box as {@link #drawCjkChar}; only the atlas region it samples differs.
+     *
+     * @param emitter The emitter to draw to.
+     * @param x       The left edge of the glyph, in logical pixels.
+     * @param y       The top edge of the glyph, in logical pixels.
+     * @param slot    The atlas slot of this glyph, as returned by {@link CjkTier2#slot(int)}.
+     * @param colour  The colour of the glyph.
+     * @param light   The lightmap coordinate.
+     */
+    private static void drawCjkTier2Char(QuadEmitter emitter, float x, float y, int slot, int colour, int light) {
+        var column = slot % CJK_TIER2_COLUMNS;
+        var row = slot / CJK_TIER2_COLUMNS;
+
+        // As elsewhere, the quad is the glyph's logical size (half its atlas size here), while the UVs cover the exact
+        // block of the atlas.
+        var xStart = CJK_TIER2_OFFSET + column * CJK_TIER2_PITCH_X;
+        var yStart = CJK_TIER2_REGION_Y + CJK_TIER2_OFFSET + row * CJK_TIER2_PITCH_Y;
+
+        quad(
+            emitter, x, y, x + CJK_TIER2_GLYPH_WIDTH / CJK_TIER2_SCALE, y + CJK_TIER2_GLYPH_HEIGHT / CJK_TIER2_SCALE, 0, colour,
+            xStart / WIDTH, yStart / HEIGHT,
+            (xStart + CJK_TIER2_GLYPH_WIDTH) / WIDTH, (yStart + CJK_TIER2_GLYPH_HEIGHT) / HEIGHT,
+            light
+        );
+    }
+
+    /**
+     * Encode a terminal character for the monitor's texture buffer.
+     * <p>
+     * A codepoint with a 2x (tier 2) glyph is replaced by its atlas slot, with {@link #TBO_TIER2_FLAG} set, so that the
+     * shader knows to sample the higher resolution region. Every other character is stored verbatim. See
+     * {@code monitor_tbo.fsh} for the other half of this.
+     *
+     * @param character The character to encode.
+     * @return The value to store in the texture buffer.
+     */
+    public static short toTboCharacter(char character) {
+        var slot = CjkTier2.slot(character);
+        return (short) (slot >= 0 ? TBO_TIER2_FLAG | slot : character);
     }
 
     public static void drawQuad(QuadEmitter emitter, float x, float y, float z, float width, float height, int colour, int light) {
@@ -208,7 +280,7 @@ public final class FixedWidthFontRenderer {
             var colour = palette.getRenderColours(getColour(textColour.charAt(i), Colour.BLACK));
 
             int index = text.charAt(i);
-            if (index > 255 && cjkSlot(index) < 0) index = '?';
+            if (index > 255 && cjkSlot(index) < 0 && CjkTier2.slot(index) < 0) index = '?';
             drawChar(emitter, x + i * FONT_WIDTH, y, index, colour, light);
 
             // A CJK glyph occupies two cells, the second of which holds a '\0' placeholder. We've already drawn the

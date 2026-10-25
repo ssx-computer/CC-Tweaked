@@ -7,6 +7,7 @@ package dan200.computercraft.core.util;
 import dan200.computercraft.core.input.ComputerInput;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public final class StringUtil {
     public static final int MAX_PASTE_LENGTH = 512;
@@ -71,7 +72,7 @@ public final class StringUtil {
     }
 
     /**
-     * Check if a character is capable of being input and passed to a {@linkplain ComputerInput#charTyped(byte) "char"
+     * Check if a character is capable of being input and passed to a {@linkplain ComputerInput#charTyped(int) "char"
      * event}.
      *
      * @param chr The character to check.
@@ -82,7 +83,7 @@ public final class StringUtil {
     }
 
     /**
-     * Check if a character is capable of being input and passed to a {@linkplain ComputerInput#charTyped(byte) "char"
+     * Check if a character is capable of being input and passed to a {@linkplain ComputerInput#charTyped(int) "char"
      * * event}.
      *
      * @param chr The character to check.
@@ -105,6 +106,12 @@ public final class StringUtil {
      */
     private static final int[] WIDE_RANGES = {
         0x1100, 0x115F, // Hangul Jamo
+        // These are East Asian Ambiguous rather than Wide, but are conventionally rendered at full width in CJK text
+        // (and so are stored as twice as wide in the font atlas). Keep in sync with CjkTier2.
+        0x2013, 0x2014, // En dash, em dash
+        0x2018, 0x2019, // Single quotation marks
+        0x201C, 0x201D, // Double quotation marks
+        0x2026, 0x2026, // Horizontal ellipsis
         0x231A, 0x231B, // Watch, hourglass
         0x2329, 0x232A, // Angle brackets
         0x23E9, 0x23EC, // Media control symbols
@@ -139,7 +146,7 @@ public final class StringUtil {
         0x2B1B, 0x2B1C, // Squares
         0x2B50, 0x2B50, // Star
         0x2B55, 0x2B55, // Circle
-        0x2E80, 0x303E, // CJK Radicals, Kangxi Radicals, CJK Symbols and Punctuation
+        0x2E80, 0x303F, // CJK Radicals, Kangxi Radicals, CJK Symbols and Punctuation
         0x3041, 0x33FF, // Kana, Bopomofo, Hangul Compatibility Jamo, Kanbun, Enclosed CJK, CJK Compatibility
         0x3400, 0x4DBF, // CJK Unified Ideographs Extension A
         0x4E00, 0x9FFF, // CJK Unified Ideographs
@@ -207,15 +214,27 @@ public final class StringUtil {
      * @return The encoded clipboard text.
      */
     public static ByteBuffer getClipboardString(String clipboard) {
-        var output = new byte[Math.min(MAX_PASTE_LENGTH, clipboard.length())];
+        var output = new byte[MAX_PASTE_LENGTH];
         var idx = 0;
 
         var iterator = clipboard.codePoints().iterator();
-        while (iterator.hasNext() && idx < output.length) {
-            var chr = unicodeToTerminal(iterator.next());
-            if (chr < 0) continue; // Strip out unconvertible characters
-            if (!isTypableChar(chr)) break; // Stop at untypable ones.
-            output[idx++] = (byte) chr;
+        while (iterator.hasNext()) {
+            var codepoint = iterator.next();
+
+            var chr = unicodeToTerminal(codepoint);
+            if (chr >= 0) {
+                if (!isTypableChar(chr)) break; // Stop at untypable ones.
+                if (idx >= output.length) break;
+                output[idx++] = (byte) chr;
+            } else if (codepoint > 0 && codepoint <= 0xFFFF && isWide(codepoint)) {
+                // Wide characters (such as CJK ideographs) are sent as UTF-8. The terminal decodes these back into a
+                // single, two cell wide character. See EventComputerInput, which does the same when typing.
+                var bytes = Character.toString(codepoint).getBytes(StandardCharsets.UTF_8);
+                if (idx + bytes.length > output.length) break;
+                System.arraycopy(bytes, 0, output, idx, bytes.length);
+                idx += bytes.length;
+            }
+            // Anything else has no equivalent in CC's charset, and so is stripped.
         }
 
         return ByteBuffer.wrap(output, 0, idx).asReadOnlyBuffer();

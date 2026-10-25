@@ -49,7 +49,14 @@ public final class DirectFixedWidthFontRenderer {
         if (index == '\0' || index == ' ') return;
 
         if (index > 255) {
-            // Anything outside of Latin-1 must be a CJK codepoint to have a glyph; otherwise fall back to '?'.
+            // Anything outside of Latin-1 must have a glyph in one of the CJK regions to be drawable; otherwise fall
+            // back to '?'. The 2x region wins, as it covers a subset of the 1x one at a higher resolution.
+            var tier2 = CjkTier2.slot(index);
+            if (tier2 >= 0) {
+                drawCjkTier2Char(emitter, x, y, tier2, colour);
+                return;
+            }
+
             var slot = cjkSlot(index);
             if (slot >= 0) {
                 drawCjkChar(emitter, x, y, slot, colour);
@@ -92,6 +99,33 @@ public final class DirectFixedWidthFontRenderer {
         quad(
             emitter, x, y, x + CJK_GLYPH_WIDTH, y + CJK_GLYPH_HEIGHT, colour,
             xStart / WIDTH, yStart / HEIGHT, (xStart + CJK_GLYPH_WIDTH) / WIDTH, (yStart + CJK_GLYPH_HEIGHT) / HEIGHT
+        );
+    }
+
+    /**
+     * Draw a wide (two cell) tier 2 (2x resolution) glyph, starting at the left edge of {@code x}.
+     * <p>
+     * The quad is the same 12x9 logical box as {@link #drawCjkChar}; only the atlas region it samples differs.
+     *
+     * @param emitter The emitter to draw to.
+     * @param x       The left edge of the glyph, in logical pixels.
+     * @param y       The top edge of the glyph, in logical pixels.
+     * @param slot    The atlas slot of this glyph, as returned by {@link CjkTier2#slot(int)}.
+     * @param colour  The colour of the glyph.
+     */
+    private static void drawCjkTier2Char(QuadEmitter emitter, float x, float y, int slot, int colour) {
+        var column = slot % CJK_TIER2_COLUMNS;
+        var row = slot / CJK_TIER2_COLUMNS;
+
+        // As elsewhere, the quad is the glyph's logical size (half its atlas size here), while the UVs cover the exact
+        // block of the atlas.
+        var xStart = CJK_TIER2_OFFSET + column * CJK_TIER2_PITCH_X;
+        var yStart = CJK_TIER2_REGION_Y + CJK_TIER2_OFFSET + row * CJK_TIER2_PITCH_Y;
+
+        quad(
+            emitter, x, y, x + CJK_TIER2_GLYPH_WIDTH / CJK_TIER2_SCALE, y + CJK_TIER2_GLYPH_HEIGHT / CJK_TIER2_SCALE, colour,
+            xStart / WIDTH, yStart / HEIGHT,
+            (xStart + CJK_TIER2_GLYPH_WIDTH) / WIDTH, (yStart + CJK_TIER2_GLYPH_HEIGHT) / HEIGHT
         );
     }
 
@@ -138,7 +172,7 @@ public final class DirectFixedWidthFontRenderer {
             var colour = palette.getRenderColours(getColour(textColour.charAt(i), Colour.BLACK));
 
             int index = text.charAt(i);
-            if (index > 255 && cjkSlot(index) < 0) index = '?';
+            if (index > 255 && cjkSlot(index) < 0 && CjkTier2.slot(index) < 0) index = '?';
             drawChar(emitter, x + i * FONT_WIDTH, y, index, colour);
 
             // A CJK glyph occupies two cells, the second of which holds a '\0' placeholder. We've already drawn the
