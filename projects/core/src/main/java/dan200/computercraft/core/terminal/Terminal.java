@@ -169,12 +169,116 @@ public class Terminal {
     public synchronized void blit(ByteBuffer text, ByteBuffer textColour, ByteBuffer backgroundColour) {
         var x = cursorX;
         var y = cursorY;
-        if (y >= 0 && y < height) {
+        if (y < 0 || y >= height) return;
+
+        // The fast path: a buffer holding a single byte per cell. This is what most callers pass, and what window.lua
+        // produces for ASCII text.
+        var length = text.remaining();
+        var ascii = true;
+        for (var i = 0; i < length; i++) {
+            if ((text.get(text.position() + i) & 0x80) != 0) {
+                ascii = false;
+                break;
+            }
+        }
+        if (ascii) {
             this.text[y].write(text, x);
             this.textColour[y].write(textColour, x);
             this.backgroundColour[y].write(backgroundColour, x);
             setChanged();
+            return;
         }
+
+        blitUtf8(toByteString(text), textColour, backgroundColour, x, y);
+    }
+
+    /**
+     * Convert a byte buffer into a string with one character per byte, as Cobalt (and so {@code TextBuffer}) does.
+     *
+     * @param buffer The buffer to convert. Its position is left untouched.
+     * @return The resulting string.
+     */
+    private static String toByteString(ByteBuffer buffer) {
+        var pos = buffer.position();
+        var length = buffer.remaining();
+        var chars = new char[length];
+        for (var i = 0; i < length; i++) chars[i] = (char) (buffer.get(pos + i) & 0xFF);
+        return new String(chars);
+    }
+
+    /**
+     * Blit a buffer which may contain UTF-8 encoded characters, such as the byte string {@code window.lua} keeps its
+     * contents in. Malformed sequences are written as (Latin-1) single byte characters, preserving the old behaviour,
+     * while wide characters occupy two cells - the character itself, then a placeholder.
+     * <p>
+     * Unlike {@link #write(String)}, the colour buffers are consumed one byte per byte of <em>text</em>, rather than one
+     * per cell. That keeps the colours aligned with the text they came from.
+     *
+     * @param text             The text to write, with one character per byte.
+     * @param colourBuffer     The text colours, one byte (a palette character) per byte of {@code text}.
+     * @param backgroundBuffer The background colours, one byte per byte of {@code text}.
+     * @param startX          The initial cursor X position.
+     * @param startY          The initial cursor Y position.
+     */
+    private void blitUtf8(String text, ByteBuffer colourBuffer, ByteBuffer backgroundBuffer, int startX, int startY) {
+        var x = startX;
+        var y = startY;
+        var changed = false;
+
+        var colourPos = colourBuffer.position();
+        var backgroundPos = backgroundBuffer.position();
+        var colourLength = colourBuffer.remaining();
+        var backgroundLength = backgroundBuffer.remaining();
+
+        var i = 0;
+        while (i < text.length()) {
+            var c = text.charAt(i);
+            int chr;
+            var bytes = 1;
+            if (c < 0x80) {
+                chr = c;
+            } else {
+                var decoded = decodeUtf8(text, i);
+                if (decoded < 0) {
+                    chr = c;
+                } else {
+                    chr = mapCharacter(decoded);
+                    bytes = utf8Length(c);
+                }
+            }
+
+            var textColourChar = i < colourLength ? (char) (colourBuffer.get(colourPos + i) & 0xFF) : BASE_16.charAt(cursorColour);
+            var backgroundColourChar = i < backgroundLength ? (char) (backgroundBuffer.get(backgroundPos + i) & 0xFF) : BASE_16.charAt(cursorBackgroundColour);
+
+            if (chr < 0) {
+                // The character cannot be represented. Skip a cell so that the cursor still advances.
+                x++;
+            } else if (chr > 0xFF) {
+                // A wide character (e.g. a CJK ideograph), which occupies two cells.
+                if (x >= 0 && x + 1 < width && y >= 0 && y < height) {
+                    this.text[y].setChar(x, (char) chr);
+                    this.text[y].setChar(x + 1, '\0');
+                    textColour[y].setChar(x, textColourChar);
+                    textColour[y].setChar(x + 1, textColourChar);
+                    backgroundColour[y].setChar(x, backgroundColourChar);
+                    backgroundColour[y].setChar(x + 1, backgroundColourChar);
+                    changed = true;
+                }
+                x += 2;
+            } else {
+                if (x >= 0 && x < width && y >= 0 && y < height) {
+                    this.text[y].setChar(x, (char) chr);
+                    textColour[y].setChar(x, textColourChar);
+                    backgroundColour[y].setChar(x, backgroundColourChar);
+                    changed = true;
+                }
+                x++;
+            }
+
+            i += bytes;
+        }
+
+        if (changed) setChanged();
     }
 
     public synchronized void write(String text) {
