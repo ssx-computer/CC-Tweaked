@@ -152,6 +152,80 @@ function create(parent, nX, nY, nWidth, nHeight, bStartVisible)
     end
 
     -- Helper functions
+
+    -- Text is buffered as a byte string, but the window's width and cursor are measured in terminal cells.
+    -- Characters outside CC's charset (such as CJK ideographs) are sent to us as UTF-8, occupying several bytes but
+    -- two cells, so we need to convert between the two.
+    --
+    -- We assume every multi-byte character is a wide one (which is true of the characters CC's font contains); a stray
+    -- or truncated byte is treated as a single cell, matching the terminal's own UTF-8 decoding.
+
+    -- The number of bytes in the UTF-8 character starting at byte `i` of `s`.
+    local function charLen(s, i)
+        local b = string.byte(s, i)
+        if not b or b < 0x80 then
+            return 1
+        elseif b >= 0xF0 then
+            return 4
+        elseif b >= 0xE0 then
+            return 3
+        elseif b >= 0xC0 then
+            return 2
+        else
+            -- A stray continuation byte. Treat it as a character of its own, so that we always make progress.
+            return 1
+        end
+    end
+
+    -- The number of cells occupied by the character starting at byte `i` of `s`.
+    local function charCells(s, i)
+        local b = string.byte(s, i)
+        if b and b >= 0xC0 then
+            return 2
+        else
+            return 1
+        end
+    end
+
+    -- The number of cells occupied by the whole of `s`.
+    local function cellWidth(s)
+        local nCells, i = 0, 1
+        while i <= #s do
+            nCells = nCells + charCells(s, i)
+            i = i + charLen(s, i)
+        end
+        return nCells
+    end
+
+    -- The byte index of the last byte of the longest prefix of `s` which fits in `nCells` cells. A multi-byte
+    -- character which would straddle that boundary is left out, so we never emit half a character.
+    local function bytePrefix(s, nCells)
+        local i, n = 1, 0
+        while i <= #s do
+            local nCharCells = charCells(s, i)
+            if n + nCharCells > nCells then break end
+            n = n + nCharCells
+            i = i + charLen(s, i)
+        end
+        return i - 1
+    end
+
+    -- Pad (or truncate) a line so that it occupies exactly `width` cells, keeping the text and colour strings
+    -- aligned byte for byte (colours are stored one byte per byte of text).
+    local function fitLine(sText, sTextColor, sBackgroundColor, width)
+        local nCells = cellWidth(sText)
+        if nCells > width then
+            local nBytes = bytePrefix(sText, width)
+            return string_sub(sText, 1, nBytes), string_sub(sTextColor, 1, nBytes), string_sub(sBackgroundColor, 1, nBytes)
+        elseif nCells < width then
+            local nPad = width - nCells
+            return sText .. string_rep(" ", nPad),
+                sTextColor .. string_rep(tHex[nTextColor], nPad),
+                sBackgroundColor .. string_rep(tHex[nBackgroundColor], nPad)
+        end
+        return sText, sTextColor, sBackgroundColor
+    end
+
     local function updateCursorPos()
         if nCursorX >= 1 and nCursorY >= 1 and
            nCursorX <= nWidth and nCursorY <= nHeight then
@@ -171,8 +245,12 @@ function create(parent, nX, nY, nWidth, nHeight, bStartVisible)
 
     local function redrawLine(n)
         local tLine = tLines[n]
+        -- The buffer holds bytes, but this window is `nWidth` *cells* wide. Clip in cells before handing the line to
+        -- the parent: a multi-byte character occupies two cells, so blitting the whole buffer could spill past the
+        -- window's right hand edge (and blitting a character which straddles that edge would poke one cell out).
+        local nBytes = bytePrefix(tLine[1], nWidth)
         parent.setCursorPos(nX, nY + n - 1)
-        parent.blit(tLine[1], tLine[2], tLine[3])
+        parent.blit(string_sub(tLine[1], 1, nBytes), string_sub(tLine[2], 1, nBytes), string_sub(tLine[3], 1, nBytes))
     end
 
     local function redraw()
@@ -188,8 +266,11 @@ function create(parent, nX, nY, nWidth, nHeight, bStartVisible)
     end
 
     local function internalBlit(sText, sTextColor, sBackgroundColor)
+        -- The cursor and the window width are in cells, so work out where the text ends in cells too. The buffer
+        -- itself stays a byte string, but a character which would spill out of the window (in particular a wide one
+        -- straddling the right hand edge) is dropped, so what we store never overflows this window when redrawn.
         local nStart = nCursorX
-        local nEnd = nStart + #sText - 1
+        local nEnd = nStart + cellWidth(sText) - 1
         if nCursorY >= 1 and nCursorY <= nHeight then
             if nStart <= nWidth and nEnd >= 1 then
                 -- Modify line
@@ -199,30 +280,24 @@ function create(parent, nX, nY, nWidth, nHeight, bStartVisible)
                     tLine[2] = sTextColor
                     tLine[3] = sBackgroundColor
                 else
-                    local sClippedText, sClippedTextColor, sClippedBackgroundColor
-                    if nStart < 1 then
-                        local nClipStart = 1 - nStart + 1
-                        local nClipEnd = nWidth - nStart + 1
-                        sClippedText = string_sub(sText, nClipStart, nClipEnd)
-                        sClippedTextColor = string_sub(sTextColor, nClipStart, nClipEnd)
-                        sClippedBackgroundColor = string_sub(sBackgroundColor, nClipStart, nClipEnd)
-                    elseif nEnd > nWidth then
-                        local nClipEnd = nWidth - nStart + 1
-                        sClippedText = string_sub(sText, 1, nClipEnd)
-                        sClippedTextColor = string_sub(sTextColor, 1, nClipEnd)
-                        sClippedBackgroundColor = string_sub(sBackgroundColor, 1, nClipEnd)
-                    else
-                        sClippedText = sText
-                        sClippedTextColor = sTextColor
-                        sClippedBackgroundColor = sBackgroundColor
-                    end
+                    -- The cells of sText which actually land on screen are those in [1, nWidth]. Discard any
+                    -- before the window (when the cursor has been scrolled off to the left) and any beyond it.
+                    local nSkip = math.max(nStart, 1) - nStart
+                    local nKeep = math.min(nEnd, nWidth) - math.max(nStart, 1) + 1
+                    local nByteFrom = bytePrefix(sText, nSkip) + 1
+                    local nByteTo = bytePrefix(sText, nSkip + nKeep)
+                    if nByteTo < nByteFrom then nByteTo = nByteFrom - 1 end
+
+                    local sClippedText = string_sub(sText, nByteFrom, nByteTo)
+                    local sClippedTextColor = string_sub(sTextColor, nByteFrom, nByteTo)
+                    local sClippedBackgroundColor = string_sub(sBackgroundColor, nByteFrom, nByteTo)
 
                     local sOldText = tLine[1]
                     local sOldTextColor = tLine[2]
                     local sOldBackgroundColor = tLine[3]
                     local sNewText, sNewTextColor, sNewBackgroundColor
                     if nStart > 1 then
-                        local nOldEnd = nStart - 1
+                        local nOldEnd = bytePrefix(sOldText, nStart - 1)
                         sNewText = string_sub(sOldText, 1, nOldEnd) .. sClippedText
                         sNewTextColor = string_sub(sOldTextColor, 1, nOldEnd) .. sClippedTextColor
                         sNewBackgroundColor = string_sub(sOldBackgroundColor, 1, nOldEnd) .. sClippedBackgroundColor
@@ -232,15 +307,14 @@ function create(parent, nX, nY, nWidth, nHeight, bStartVisible)
                         sNewBackgroundColor = sClippedBackgroundColor
                     end
                     if nEnd < nWidth then
-                        local nOldStart = nEnd + 1
-                        sNewText = sNewText .. string_sub(sOldText, nOldStart, nWidth)
-                        sNewTextColor = sNewTextColor .. string_sub(sOldTextColor, nOldStart, nWidth)
-                        sNewBackgroundColor = sNewBackgroundColor .. string_sub(sOldBackgroundColor, nOldStart, nWidth)
+                        local nOldStart = bytePrefix(sOldText, nEnd) + 1
+                        sNewText = sNewText .. string_sub(sOldText, nOldStart)
+                        sNewTextColor = sNewTextColor .. string_sub(sOldTextColor, nOldStart)
+                        sNewBackgroundColor = sNewBackgroundColor .. string_sub(sOldBackgroundColor, nOldStart)
                     end
 
-                    tLine[1] = sNewText
-                    tLine[2] = sNewTextColor
-                    tLine[3] = sNewBackgroundColor
+                    -- Keep every buffered line exactly nWidth cells long, so it always fully covers the window.
+                    tLine[1], tLine[2], tLine[3] = fitLine(sNewText, sNewTextColor, sNewBackgroundColor, nWidth)
                 end
 
                 -- Redraw line
@@ -565,18 +639,9 @@ function create(parent, nX, nY, nWidth, nHeight, bStartVisible)
                     local tOldLine = tLines[y]
                     if new_width == nWidth then
                         tNewLines[y] = tOldLine
-                    elseif new_width < nWidth then
-                        tNewLines[y] = {
-                            string_sub(tOldLine[1], 1, new_width),
-                            string_sub(tOldLine[2], 1, new_width),
-                            string_sub(tOldLine[3], 1, new_width),
-                        }
                     else
-                        tNewLines[y] = {
-                            tOldLine[1] .. string_sub(sEmptyText, nWidth + 1, new_width),
-                            tOldLine[2] .. string_sub(sEmptyTextColor, nWidth + 1, new_width),
-                            tOldLine[3] .. string_sub(sEmptyBackgroundColor, nWidth + 1, new_width),
-                        }
+                        -- `new_width` is in cells, so trim/pad using the cell-aware helper rather than by byte count.
+                        tNewLines[y] = { fitLine(tOldLine[1], tOldLine[2], tOldLine[3], new_width) }
                     end
                 end
             end

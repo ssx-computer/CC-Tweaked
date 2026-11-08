@@ -250,7 +250,11 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
         term.setCursorPos(sx, cy)
         local sReplace = _bClear and " " or _sReplaceChar
         if sReplace then
-            term.write(string.rep(sReplace, cellsOf(sLine, nScroll + 1, #sLine)))
+            -- We are overwriting the *stored* line, which (when term is a window, as it is under multishell) is a
+            -- byte string indexed one byte per cell. So the number of replacement characters must cover the whole
+            -- line in bytes, not cells: a 3 byte / 2 cell character would otherwise leave its last byte behind,
+            -- which the terminal then decodes as a stray character (the "garbage" after a backspace).
+            term.write(string.rep(sReplace, math.max(#sLine - nScroll, 0)))
         else
             term.write(string.sub(sLine, nScroll + 1))
         end
@@ -265,7 +269,8 @@ function read(_sReplaceChar, _tHistory, _fnComplete, _sDefault)
                 term.setBackgroundColor(colors.gray)
             end
             if sReplace then
-                term.write(string.rep(sReplace, cellsOf(sCompletion, 1, #sCompletion)))
+                -- Likewise the completion text is buffered byte for byte, so erase it by byte count.
+                term.write(string.rep(sReplace, #sCompletion))
             else
                 term.write(sCompletion)
             end
