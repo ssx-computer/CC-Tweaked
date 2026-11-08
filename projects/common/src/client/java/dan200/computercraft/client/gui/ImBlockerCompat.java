@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.List;
 
 /**
@@ -48,11 +49,7 @@ public final class ImBlockerCompat {
     private static boolean resolved;
     private static boolean whitelisted;
 
-    private static @Nullable Object container;
-    private static @Nullable Method getPreferredState;
-    private static @Nullable Method setPreferredState;
-    private static @Nullable Method deliverFocus;
-    private static @Nullable Method getFocusOwner;
+    private static @Nullable ImBlocker container;
 
     private ImBlockerCompat() {
     }
@@ -67,21 +64,21 @@ public final class ImBlockerCompat {
      */
     public static void setTerminalIme(boolean enabled) {
         if (enabled) whitelistTerminalScreens();
-        if (!resolve()) return;
+
+        var imBlocker = resolve();
+        if (imBlocker == null) return;
 
         try {
             // IMBlocker may have changed this behind our back (most notably when returning from another screen), so
             // read the current state rather than tracking it ourselves.
-            if ((Boolean) getPreferredState.invoke(container) != enabled) {
-                setPreferredState.invoke(container, enabled);
+            var state = imBlocker.getPreferredState.invoke(imBlocker.container);
+            if (!(state instanceof Boolean current) || current != enabled) {
+                imBlocker.setPreferredState.invoke(imBlocker.container, enabled);
 
                 // setPreferredState only applies the new state if IMBlocker thinks the game window (rather than some
                 // widget) holds focus, and it will never think that for our terminal. Assign it ourselves, but only if
                 // nobody else holds it - we do not want to steal focus from a real widget.
-                if (enabled && deliverFocus != null && (getFocusOwner == null
-                    || getFocusOwner.invoke(null) == null || getFocusOwner.invoke(null) == container)) {
-                    deliverFocus.invoke(container);
-                }
+                if (enabled && !holdsFocus()) imBlocker.deliverFocus.invoke(imBlocker.container);
             }
         } catch (ReflectiveOperationException e) {
             giveUp(e);
@@ -94,7 +91,27 @@ public final class ImBlockerCompat {
      * @return Whether the IME integration is active.
      */
     public static boolean isSupported() {
-        return resolve();
+        return resolve() != null;
+    }
+
+    /**
+     * Whether something other than IMBlocker's window container currently holds focus.
+     *
+     * @return Whether we should leave the focus alone.
+     */
+    private static boolean holdsFocus() {
+        var imBlocker = resolve();
+        if (imBlocker == null) return false;
+
+        var getFocusOwner = imBlocker.getFocusOwner;
+        if (getFocusOwner == null) return false;
+
+        try {
+            var owner = getFocusOwner.invoke(null);
+            return owner != null && owner != imBlocker.container;
+        } catch (ReflectiveOperationException e) {
+            return true;
+        }
     }
 
     /**
@@ -131,43 +148,68 @@ public final class ImBlockerCompat {
     /**
      * Resolve IMBlocker's classes, if they are present and supported.
      *
-     * @return Whether IMBlocker's focus management is available.
+     * @return IMBlocker's focus management, or {@code null} if it is not available.
      */
-    private static boolean resolve() {
-        if (resolved) return container != null;
+    private static @Nullable ImBlocker resolve() {
+        if (resolved) return container;
         resolved = true;
 
         try {
             var containerClass = Class.forName("io.github.reserveword.imblocker.common.gui.FocusContainer");
-            container = findField(containerClass, "MINECRAFT").get(null);
-            getPreferredState = findMethod(containerClass, "getPreferredState");
-            setPreferredState = findMethod(containerClass, "setPreferredState", boolean.class);
-            deliverFocus = findMethod(containerClass, "deliverFocus");
+            var instance = getStatic(containerClass, "MINECRAFT");
+            var getPreferredState = findMethod(containerClass, "getPreferredState");
+            var setPreferredState = findMethod(containerClass, "setPreferredState", boolean.class);
+            var deliverFocus = findMethod(containerClass, "deliverFocus");
+
+            // Older versions of IMBlocker (5.1 - 5.3) have the container, but not everything we need. Only claim
+            // support when we really can drive it.
+            if (instance == null || getPreferredState == null || setPreferredState == null || deliverFocus == null) {
+                LOG.debug("IMBlocker is installed, but does not support its focus management API.");
+                return null;
+            }
+
+            container = new ImBlocker(instance, getPreferredState, setPreferredState, deliverFocus, findFocusOwner());
         } catch (Throwable e) {
             // IMBlocker is not installed, or is a version without its focus management system (5.0 - 5.3).
             LOG.debug("IMBlocker is not installed (or is unsupported), not enabling IME integration.", e);
-            container = null;
-            return false;
-        }
-
-        // Older versions of IMBlocker (5.1 - 5.3) have the container, but not everything we need. Only claim support
-        // when we really can drive it, so that setTerminalIme() does not trip over a missing member.
-        if (container == null || getPreferredState == null || setPreferredState == null || deliverFocus == null) {
-            LOG.debug("IMBlocker is installed, but does not support its focus management API, not enabling integration.");
-            container = null;
-            return false;
-        }
-
-        try {
-            var focusManager = Class.forName("io.github.reserveword.imblocker.common.gui.FocusManager");
-            var method = focusManager.getMethod("getFocusOwner");
-            getFocusOwner = java.lang.reflect.Modifier.isStatic(method.getModifiers()) ? method : null;
-        } catch (Throwable e) {
-            getFocusOwner = null;
+            return null;
         }
 
         LOG.info("Enabling IMBlocker compatibility: the IME will be enabled while a terminal is focused.");
-        return true;
+        return container;
+    }
+
+    /**
+     * Look up IMBlocker's {@code FocusManager#getFocusOwner}, if it is a static method.
+     *
+     * @return The method, or {@code null} if it is not available.
+     */
+    private static @Nullable Method findFocusOwner() {
+        try {
+            var method = Class.forName("io.github.reserveword.imblocker.common.gui.FocusManager")
+                .getMethod("getFocusOwner");
+            return Modifier.isStatic(method.getModifiers()) ? method : null;
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    /**
+     * Read a static field, if it is present.
+     *
+     * @param owner The class to read from.
+     * @param name  The name of the field.
+     * @return The value of the field, or {@code null} if it could not be read.
+     */
+    private static @Nullable Object getStatic(Class<?> owner, String name) {
+        var field = findField(owner, name);
+        if (field == null) return null;
+
+        try {
+            return field.get(null);
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
     }
 
     /**
@@ -226,5 +268,24 @@ public final class ImBlockerCompat {
     private static void giveUp(Exception e) {
         LOG.warn("Cannot talk to IMBlocker, the input method will not work in the computer UI.", e);
         container = null;
+    }
+
+    /**
+     * The parts of IMBlocker we drive. Only ever constructed once everything has been resolved successfully, so that
+     * every member can be used without further checks.
+     *
+     * @param container         IMBlocker's {@code FocusContainer.MINECRAFT}.
+     * @param getPreferredState {@code FocusContainer#getPreferredState()}.
+     * @param setPreferredState {@code FocusContainer#setPreferredState(boolean)}.
+     * @param deliverFocus      {@code FocusContainer#deliverFocus()}.
+     * @param getFocusOwner     {@code FocusManager#getFocusOwner()}, if it is available.
+     */
+    private record ImBlocker(
+        Object container,
+        Method getPreferredState,
+        Method setPreferredState,
+        Method deliverFocus,
+        @Nullable Method getFocusOwner
+    ) {
     }
 }
