@@ -6,6 +6,7 @@ package dan200.computercraft.client.gui.widgets;
 
 import dan200.computercraft.client.gui.ClientComputerActions;
 import dan200.computercraft.client.gui.ClientComputerInput;
+import dan200.computercraft.client.gui.ImBlockerCompat;
 import dan200.computercraft.client.gui.KeyConverter;
 import dan200.computercraft.client.render.RenderTypes;
 import dan200.computercraft.client.render.text.FixedWidthFontRenderer;
@@ -187,6 +188,11 @@ public class TerminalWidget extends AbstractWidget {
     }
 
     public void update() {
+        // IMBlocker enables the input method based on what it believes holds focus. Our terminal is not a widget type
+        // it knows about, so tell it explicitly - and do so every tick, as it may have changed the state itself (for
+        // example when coming back from another screen).
+        ImBlockerCompat.setTerminalIme(isFocused());
+
         if (terminateTimer >= 0 && terminateTimer < TERMINATE_TIME && (terminateTimer += 0.05f) > TERMINATE_TIME) {
             computerActions.terminate();
         }
@@ -203,6 +209,7 @@ public class TerminalWidget extends AbstractWidget {
     @Override
     public void setFocused(boolean focused) {
         super.setFocused(focused);
+        ImBlockerCompat.setTerminalIme(focused);
 
         if (!focused) {
             computerInput.releaseInputs();
