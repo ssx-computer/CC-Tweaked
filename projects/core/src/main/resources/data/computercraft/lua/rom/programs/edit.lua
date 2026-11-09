@@ -234,6 +234,83 @@ local function shallowEqual(x, y)
     return true
 end
 
+-- Text is stored as a byte string, but the cursor and scroll offset are measured in terminal cells: characters
+-- outside CC's charset (such as CJK ideographs) are sent to us as UTF-8, occupying several bytes but two cells.
+-- These helpers convert between the two, and let us move the cursor by whole characters.
+--
+-- We assume every multi-byte character is a wide one, which is true of everything CC's font contains; a stray or
+-- truncated byte counts as a single cell, matching the terminal's own decoding.
+
+-- The number of bytes in the UTF-8 character starting at byte `i` of `s`.
+local function charLen(s, i)
+    local b = string.byte(s, i)
+    if not b or b < 0x80 then
+        return 1
+    elseif b >= 0xF0 then
+        return 4
+    elseif b >= 0xE0 then
+        return 3
+    elseif b >= 0xC0 then
+        return 2
+    else
+        -- A stray continuation byte. Treat it as a character of its own, so that we always make progress.
+        return 1
+    end
+end
+
+-- The number of cells occupied by the character starting at byte `i` of `s`.
+local function charCells(s, i)
+    local b = string.byte(s, i)
+    if b and b >= 0xC0 then
+        return 2
+    else
+        return 1
+    end
+end
+
+-- The index of the first byte of the character which ends at byte `p` of `s`. Given a byte index inside a character,
+-- this gives the start of it, so we never split one.
+local function charStart(s, p)
+    while p > 1 do
+        local b = string.byte(s, p)
+        if not b or b < 0x80 or b >= 0xC0 then break end
+        p = p - 1
+    end
+    return p
+end
+
+-- The number of cells occupied by the bytes `from` to `to` of `s`.
+local function cellsOf(s, from, to)
+    local n, i = 0, from
+    while i <= to do
+        n = n + charCells(s, i)
+        i = i + charLen(s, i)
+    end
+    return n
+end
+
+-- The byte index of the cursor when it sits `nCells` cells into `s`, snapped to a character boundary.
+local function byteAtCell(s, nCells)
+    local i, n = 1, 0
+    while i <= #s do
+        local nCharCells = charCells(s, i)
+        if n + nCharCells > nCells then break end
+        n = n + nCharCells
+        i = i + charLen(s, i)
+    end
+    return i
+end
+
+-- The cursor's column, as a 1-based offset within the visible window.
+local function cursorColumn()
+    return cellsOf(tLines[y] or "", 1, x - 1) + 1 - scrollX
+end
+
+-- Where to put the cursor on `line`, when trying to keep the same column as we are on now.
+local function clampCursorX(line)
+    return charStart(line, math.min(x, #line + 1))
+end
+
 local function redrawLines(line, endLine)
     if not endLine then endLine = line end
 
@@ -301,7 +378,7 @@ local function redrawLines(line, endLine)
     end
 
     term.setTextColor(colours.white)
-    term.setCursorPos(x - scrollX, y - scrollY)
+    term.setCursorPos(cursorColumn(), y - scrollY)
 end
 
 local function redrawText()
@@ -332,7 +409,7 @@ local function redrawMenu()
     end
 
     -- Reset cursor
-    term.setCursorPos(x - scrollX, y - scrollY)
+    term.setCursorPos(cursorColumn(), y - scrollY)
     term.setCursorBlink(not current_menu)
 end
 
@@ -474,16 +551,17 @@ local tMenuFuncs = {
 local function setCursor(newX, newY)
     local _, oldY = x, y
     x, y = newX, newY
-    local screenX = x - scrollX
+    local screenX = cursorColumn()
     local screenY = y - scrollY
 
     local bRedraw = false
     if screenX < 1 then
-        scrollX = x - 1
+        -- Scroll right up to the cursor. Our offset is in cells, so work out how many the cursor is into the line.
+        scrollX = cellsOf(tLines[y] or "", 1, x - 1)
         screenX = 1
         bRedraw = true
     elseif screenX > w then
-        scrollX = x - w
+        scrollX = cellsOf(tLines[y] or "", 1, x - 1) - (w - 1)
         screenX = w
         bRedraw = true
     end
@@ -564,10 +642,7 @@ while bRunning do
 
                 elseif y > 1 then
                     -- Move cursor up
-                    setCursor(
-                        math.min(x, #tLines[y - 1] + 1),
-                        y - 1
-                    )
+                    setCursor(clampCursorX(tLines[y - 1]), y - 1)
                 end
 
             elseif key == keys.down then
@@ -581,10 +656,7 @@ while bRunning do
 
                 elseif y < #tLines then
                     -- Move cursor down
-                    setCursor(
-                        math.min(x, #tLines[y + 1] + 1),
-                        y + 1
-                    )
+                    setCursor(clampCursorX(tLines[y + 1]), y + 1)
                 end
 
             elseif key == keys.tab and not bReadOnly then
@@ -606,10 +678,7 @@ while bRunning do
                 else
                     newY = 1
                 end
-                setCursor(
-                    math.min(x, #tLines[newY] + 1),
-                    newY
-                )
+                setCursor(clampCursorX(tLines[newY]), newY)
             elseif key == keys.pageDown then
                 -- Move down a page
                 local newY
@@ -618,8 +687,7 @@ while bRunning do
                 else
                     newY = #tLines
                 end
-                local newX = math.min(x, #tLines[newY] + 1)
-                setCursor(newX, newY)
+                setCursor(clampCursorX(tLines[newY]), newY)
 
             elseif key == keys.home then
                 -- Move cursor to the beginning
@@ -636,8 +704,8 @@ while bRunning do
 
             elseif key == keys.left then
                 if x > 1 then
-                    -- Move cursor left
-                    setCursor(x - 1, y)
+                    -- Move cursor left, over a whole character rather than a single byte.
+                    setCursor(charStart(tLines[y], x - 1), y)
                 elseif x == 1 and y > 1 then
                     setCursor(#tLines[y - 1] + 1, y - 1)
                 end
@@ -645,8 +713,8 @@ while bRunning do
             elseif key == keys.right then
                 local nLimit = #tLines[y] + 1
                 if x < nLimit then
-                    -- Move cursor right
-                    setCursor(x + 1, y)
+                    -- Move cursor right, over a whole character rather than a single byte.
+                    setCursor(x + charLen(tLines[y], x), y)
                 elseif nCompletion and x == #tLines[y] + 1 then
                     -- Accept autocomplete
                     acceptCompletion()
@@ -659,7 +727,7 @@ while bRunning do
                 local nLimit = #tLines[y] + 1
                 if x < nLimit then
                     local sLine = tLines[y]
-                    tLines[y] = string.sub(sLine, 1, x - 1) .. string.sub(sLine, x + 1)
+                    tLines[y] = string.sub(sLine, 1, x - 1) .. string.sub(sLine, x + charLen(sLine, x))
                     recomplete()
                     redrawLines(y)
                 elseif y < #tLines then
@@ -678,8 +746,10 @@ while bRunning do
                         tLines[y] = string.sub(sLine, 1, x - 5) .. string.sub(sLine, x)
                         setCursor(x - 4, y)
                     else
-                        tLines[y] = string.sub(sLine, 1, x - 2) .. string.sub(sLine, x)
-                        setCursor(x - 1, y)
+                        -- Delete the whole character before the cursor, not just its last byte.
+                        local nStart = charStart(sLine, x - 1)
+                        tLines[y] = string.sub(sLine, 1, nStart - 1) .. string.sub(sLine, x)
+                        setCursor(nStart, y)
                     end
                 elseif y > 1 then
                     -- Remove newline
@@ -716,7 +786,7 @@ while bRunning do
             -- Input text
             local sLine = tLines[y]
             tLines[y] = string.sub(sLine, 1, x - 1) .. event[2] .. string.sub(sLine, x)
-            setCursor(x + 1, y)
+            setCursor(x + #event[2], y)
         end
 
     elseif event[1] == "paste" and not bReadOnly then
@@ -741,8 +811,11 @@ while bRunning do
                 -- Left click
                 if cy < h then
                     local newY = math.min(math.max(scrollY + cy, 1), #tLines)
-                    local newX = math.min(math.max(scrollX + cx, 1), #tLines[newY] + 1)
-                    setCursor(newX, newY)
+                    -- `cx` and our scroll offset are both measured in cells, so convert the clicked column back into a
+                    -- byte position, snapped to a character boundary.
+                    local sNewLine = tLines[newY]
+                    local newX = byteAtCell(sNewLine, scrollX + cx - 1)
+                    setCursor(math.min(math.max(newX, 1), #sNewLine + 1), newY)
                 else
                     current_menu = menu.create(menu_items)
                     redrawMenu()
