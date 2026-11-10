@@ -46,6 +46,13 @@ import dan200.computercraft.shared.details.BlockDetails;
 import dan200.computercraft.shared.details.EntityDetails;
 import dan200.computercraft.shared.details.ItemDetails;
 import dan200.computercraft.shared.integration.PermissionRegistry;
+import dan200.computercraft.shared.internet.DeviceNetworkAPI;
+import dan200.computercraft.shared.internet.NetworkAPI;
+import dan200.computercraft.shared.internet.NetworkCoreAccess;
+import dan200.computercraft.shared.internet.NetworkCoreBlock;
+import dan200.computercraft.shared.internet.NetworkCoreBlockEntity;
+import dan200.computercraft.shared.internet.NetworkSwitchBlock;
+import dan200.computercraft.shared.internet.NetworkSwitchBlockEntity;
 import dan200.computercraft.shared.lectern.CustomLecternBlock;
 import dan200.computercraft.shared.lectern.CustomLecternBlockEntity;
 import dan200.computercraft.shared.lectern.PocketComputerLecternMenu;
@@ -203,6 +210,13 @@ public final class ModRegistry {
 
         public static final RegistryEntry<RedstoneRelayBlock> REDSTONE_RELAY = REGISTRY.register("redstone_relay",
             () -> new RedstoneRelayBlock(redstoneConductor().mapColor(MapColor.STONE)));
+
+        // Our virtual network. A switch bridges six independent network ports, while a core is a computer with six
+        // ports, and so acts as the network's DHCP server, router and firewall.
+        public static final RegistryEntry<NetworkSwitchBlock> NETWORK_SWITCH = REGISTRY.register("network_switch",
+            () -> new NetworkSwitchBlock(properties().mapColor(MapColor.STONE)));
+        public static final RegistryEntry<NetworkCoreBlock> NETWORK_CORE = REGISTRY.register("network_core",
+            () -> new NetworkCoreBlock(redstoneConductor().mapColor(MapColor.STONE)));
     }
 
     public static class BlockEntities {
@@ -248,6 +262,11 @@ public final class ModRegistry {
         public static final RegistryEntry<BlockEntityType<CustomLecternBlockEntity>> LECTERN = ofBlock(Blocks.LECTERN, CustomLecternBlockEntity::new);
 
         public static final RegistryEntry<BlockEntityType<RedstoneRelayBlockEntity>> REDSTONE_RELAY = ofBlock(Blocks.REDSTONE_RELAY, RedstoneRelayBlockEntity::new);
+
+        public static final RegistryEntry<BlockEntityType<NetworkSwitchBlockEntity>> NETWORK_SWITCH =
+            ofBlock(Blocks.NETWORK_SWITCH, (p, s) -> new NetworkSwitchBlockEntity(BlockEntities.NETWORK_SWITCH.get(), p, s));
+        public static final RegistryEntry<BlockEntityType<NetworkCoreBlockEntity>> NETWORK_CORE =
+            ofBlock(Blocks.NETWORK_CORE, (p, s) -> new NetworkCoreBlockEntity(BlockEntities.NETWORK_CORE.get(), p, s));
     }
 
     public static final class Items {
@@ -298,6 +317,8 @@ public final class ModRegistry {
         public static final RegistryEntry<BlockItem> WIRELESS_MODEM_ADVANCED = ofBlock(Blocks.WIRELESS_MODEM_ADVANCED, BlockItem::new);
         public static final RegistryEntry<BlockItem> WIRED_MODEM_FULL = ofBlock(Blocks.WIRED_MODEM_FULL, BlockItem::new);
         public static final RegistryEntry<BlockItem> REDSTONE_RELAY = ofBlock(Blocks.REDSTONE_RELAY, BlockItem::new);
+        public static final RegistryEntry<BlockItem> NETWORK_SWITCH = ofBlock(Blocks.NETWORK_SWITCH, BlockItem::new);
+        public static final RegistryEntry<BlockItem> NETWORK_CORE = ofBlock(Blocks.NETWORK_CORE, BlockItem::new);
 
         public static final RegistryEntry<CableBlockItem.Cable> CABLE = REGISTRY.register("cable",
             () -> new CableBlockItem.Cable(Blocks.CABLE.get(), properties()));
@@ -570,6 +591,8 @@ public final class ModRegistry {
                 out.accept(Items.WIRED_MODEM.get());
                 out.accept(Items.WIRED_MODEM_FULL.get());
                 out.accept(Items.REDSTONE_RELAY.get());
+                out.accept(Items.NETWORK_SWITCH.get());
+                out.accept(Items.NETWORK_CORE.get());
 
                 out.accept(Items.MONITOR_NORMAL.get());
                 out.accept(Items.MONITOR_ADVANCED.get());
@@ -627,6 +650,19 @@ public final class ModRegistry {
             return admin == null ? null : new CommandAPI(computer, admin);
         });
 
+        // The `net` API is only available to computers which are part of a network core, as those are the ones with a
+        // network stack, DHCP server and router to configure.
+        ComputerCraftAPI.registerAPIFactory(computer -> {
+            var network = computer.getComponent(NetworkCoreAccess.COMPONENT);
+            return network == null ? null : new NetworkAPI(network);
+        });
+
+        // Every other computer with a modem is a host on the network instead, and gets the client side of the same API.
+        ComputerCraftAPI.registerAPIFactory(computer -> {
+            if (computer.getComponent(NetworkCoreAccess.COMPONENT) != null) return null;
+            return DeviceNetworkAPI.hasModem(computer) ? new DeviceNetworkAPI(computer) : null;
+        });
+
         VanillaDetailRegistries.ITEM_STACK.addProvider(ItemDetails::fill);
         VanillaDetailRegistries.BLOCK_IN_WORLD.addProvider(BlockDetails::fill);
         VanillaDetailRegistries.ENTITY.addProvider(EntityDetails::fill);
@@ -648,6 +684,7 @@ public final class ModRegistry {
     public static void registerPeripherals(BlockComponent<IPeripheral, Direction> peripherals) {
         peripherals.registerForBlockEntity(ModRegistry.BlockEntities.COMPUTER_NORMAL.get(), (b, d) -> b.peripheral());
         peripherals.registerForBlockEntity(ModRegistry.BlockEntities.COMPUTER_ADVANCED.get(), (b, d) -> b.peripheral());
+        peripherals.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_CORE.get(), (b, d) -> b.peripheral());
         peripherals.registerForBlockEntity(ModRegistry.BlockEntities.TURTLE_NORMAL.get(), (b, d) -> b.peripheral());
         peripherals.registerForBlockEntity(ModRegistry.BlockEntities.TURTLE_ADVANCED.get(), (b, d) -> b.peripheral());
         peripherals.registerForBlockEntity(ModRegistry.BlockEntities.SPEAKER.get(), (b, d) -> b.peripheral());
@@ -667,6 +704,12 @@ public final class ModRegistry {
     public static void registerWiredElements(BlockComponent<WiredElement, Direction> wiredElements) {
         wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.WIRED_MODEM_FULL.get(), (b, d) -> b.getElement());
         wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.CABLE.get(), CableBlockEntity::getWiredElement);
+
+        // Switches and cores expose a different wired element on each side, so that each port is its own network. The
+        // side passed to us here is the side of our block which faces the block being looked up, and so is exactly the
+        // port we want to give back.
+        wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_SWITCH.get(), NetworkSwitchBlockEntity::getElement);
+        wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_CORE.get(), NetworkCoreBlockEntity::getElement);
     }
 
     /**

@@ -13,10 +13,12 @@ import dan200.computercraft.api.network.PacketReceiver;
 import dan200.computercraft.api.network.PacketSender;
 import dan200.computercraft.api.peripheral.IComputerAccess;
 import dan200.computercraft.api.peripheral.IPeripheral;
+import dan200.computercraft.shared.internet.InternetTransport;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Modems allow you to send messages between computers over long distances.
@@ -88,6 +90,13 @@ public abstract class ModemPeripheral implements IPeripheral, PacketSender, Pack
     private final @GuardedBy("computers") Set<IComputerAccess> computers = new HashSet<>(1);
     private final ModemState state;
 
+    /**
+     * A listener for the raw frames of CC's virtual network, if one has attached to this modem.
+     *
+     * @see #setVirtualNetListener(Consumer)
+     */
+    private @Nullable Consumer<byte[]> virtualNetListener;
+
     protected ModemPeripheral(ModemState state) {
         this.state = state;
     }
@@ -113,8 +122,49 @@ public abstract class ModemPeripheral implements IPeripheral, PacketSender, Pack
         setNetwork(null);
     }
 
+    /**
+     * Attach (or detach) a listener for CC's virtual network.
+     * <p>
+     * While a listener is attached, this modem opens {@link InternetTransport#CHANNEL} and hands every frame received on
+     * it straight to the listener, rather than raising {@code modem_message} events. This is what lets a computer act as
+     * a host on the virtual network, without programs having to know about its wire format.
+     *
+     * @param listener The listener to attach, or {@code null} to detach the current one.
+     */
+    public void setVirtualNetListener(@Nullable Consumer<byte[]> listener) {
+        if (virtualNetListener == listener) return;
+        virtualNetListener = listener;
+
+        if (listener == null) {
+            state.close(InternetTransport.CHANNEL);
+        } else {
+            try {
+                state.open(InternetTransport.CHANNEL);
+            } catch (LuaException e) {
+                // The channel is always in range, so this cannot happen.
+                throw new IllegalStateException("Cannot open the virtual network channel.", e);
+            }
+        }
+    }
+
+    /**
+     * Hand a packet to our virtual network listener, if it is one of ours.
+     *
+     * @param packet The packet which was received.
+     * @return Whether the packet was handled by the virtual network, and so should not be raised as a modem event.
+     */
+    private boolean receiveVirtualNet(Packet packet) {
+        var listener = virtualNetListener;
+        if (listener == null || packet.channel() != InternetTransport.CHANNEL) return false;
+        if (!(packet.payload() instanceof byte[] data)) return true;
+
+        listener.accept(data);
+        return true;
+    }
+
     @Override
     public void receiveSameDimension(Packet packet, double distance) {
+        if (receiveVirtualNet(packet)) return;
         if (packet.sender() == this || !state.isOpen(packet.channel())) return;
 
         synchronized (computers) {
@@ -127,6 +177,7 @@ public abstract class ModemPeripheral implements IPeripheral, PacketSender, Pack
 
     @Override
     public void receiveDifferentDimension(Packet packet) {
+        if (receiveVirtualNet(packet)) return;
         if (packet.sender() == this || !state.isOpen(packet.channel())) return;
 
         synchronized (computers) {

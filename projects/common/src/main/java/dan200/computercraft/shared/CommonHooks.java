@@ -12,6 +12,7 @@ import dan200.computercraft.shared.lectern.CustomLecternBlock;
 import dan200.computercraft.shared.peripheral.monitor.MonitorWatcher;
 import dan200.computercraft.shared.util.DropConsumer;
 import dan200.computercraft.shared.util.TickScheduler;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -195,6 +196,14 @@ public final class CommonHooks {
         var computerId = stack.get(ModRegistry.DataComponents.COMPUTER_ID.get());
         if (computerId != null && (flags.isAdvanced() || !stack.has(DataComponents.CUSTOM_NAME))) {
             computerId.addToTooltip("gui.computercraft.tooltip.computer_id", appender);
+        }
+
+        // Our network blocks have a fixed description, so there's no need for a data component here.
+        var item = stack.getItem();
+        if (item == ModRegistry.Items.NETWORK_SWITCH.get()) {
+            out.add(Component.translatable("gui.computercraft.tooltip.network_switch").withStyle(ChatFormatting.GRAY));
+        } else if (item == ModRegistry.Items.NETWORK_CORE.get()) {
+            out.add(Component.translatable("gui.computercraft.tooltip.network_core").withStyle(ChatFormatting.GRAY));
         }
     }
 

@@ -31,7 +31,8 @@ class TagProvider {
         tags.tag(ComputerCraftTags.Blocks.COMPUTER).add(
             ModRegistry.Blocks.COMPUTER_NORMAL.get(),
             ModRegistry.Blocks.COMPUTER_ADVANCED.get(),
-            ModRegistry.Blocks.COMPUTER_COMMAND.get()
+            ModRegistry.Blocks.COMPUTER_COMMAND.get(),
+            ModRegistry.Blocks.NETWORK_CORE.get()
         );
         tags.tag(ComputerCraftTags.Blocks.TURTLE).add(ModRegistry.Blocks.TURTLE_NORMAL.get(), ModRegistry.Blocks.TURTLE_ADVANCED.get());
         tags.tag(ComputerCraftTags.Blocks.WIRED_MODEM).add(ModRegistry.Blocks.CABLE.get(), ModRegistry.Blocks.WIRED_MODEM_FULL.get());
@@ -77,7 +78,9 @@ class TagProvider {
             ModRegistry.Blocks.WIRELESS_MODEM_ADVANCED.get(),
             ModRegistry.Blocks.WIRED_MODEM_FULL.get(),
             ModRegistry.Blocks.CABLE.get(),
-            ModRegistry.Blocks.REDSTONE_RELAY.get()
+            ModRegistry.Blocks.REDSTONE_RELAY.get(),
+            ModRegistry.Blocks.NETWORK_SWITCH.get(),
+            ModRegistry.Blocks.NETWORK_CORE.get()
         );
 
         tags.tag(BlockTags.MINEABLE_WITH_AXE).add(ModRegistry.Blocks.LECTERN.get());

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "computercraft:block/network_core_front_blinking",
+    "side": "computercraft:block/network_core_side",
+    "top": "computercraft:block/network_core_top"
+  }
+}

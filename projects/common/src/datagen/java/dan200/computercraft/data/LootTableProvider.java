@@ -51,12 +51,14 @@ class LootTableProvider {
         selfDrop(add, ModRegistry.Blocks.WIRELESS_MODEM_NORMAL);
         selfDrop(add, ModRegistry.Blocks.WIRELESS_MODEM_ADVANCED);
         selfDrop(add, ModRegistry.Blocks.REDSTONE_RELAY);
+        selfDrop(add, ModRegistry.Blocks.NETWORK_SWITCH);
 
         computerDrop(add, ModRegistry.Blocks.COMPUTER_NORMAL);
         computerDrop(add, ModRegistry.Blocks.COMPUTER_ADVANCED);
         computerDrop(add, ModRegistry.Blocks.COMPUTER_COMMAND);
         computerDrop(add, ModRegistry.Blocks.TURTLE_NORMAL);
         computerDrop(add, ModRegistry.Blocks.TURTLE_ADVANCED);
+        computerDrop(add, ModRegistry.Blocks.NETWORK_CORE);
 
         blockDrop(add, ModRegistry.Blocks.LECTERN, LootItem.lootTableItem(Items.LECTERN), ExplosionCondition.survivesExplosion());
 

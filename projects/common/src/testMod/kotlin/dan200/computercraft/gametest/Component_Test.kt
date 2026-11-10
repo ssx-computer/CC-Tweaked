@@ -44,6 +44,9 @@ class Component_Test {
             ModRegistry.Blocks.WIRELESS_MODEM_ADVANCED to Optional.of("modem"),
             ModRegistry.Blocks.WIRED_MODEM_FULL to Optional.of("modem"),
             ModRegistry.Blocks.REDSTONE_RELAY to Optional.of("redstone_relay"),
+            ModRegistry.Blocks.NETWORK_CORE to Optional.of("computer"),
+            // A switch is a purely passive device: it has no peripheral of its own.
+            ModRegistry.Blocks.NETWORK_SWITCH to Optional.empty(),
         )) {
             context.setBlock(pos, block.get())
             if (type.isPresent) {
