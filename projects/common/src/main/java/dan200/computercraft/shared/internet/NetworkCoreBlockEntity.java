@@ -8,6 +8,7 @@ import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.WiredElement;
 import dan200.computercraft.api.network.wired.WiredNode;
 import dan200.computercraft.core.internet.DhcpServer;
+import dan200.computercraft.core.internet.FirewallRule;
 import dan200.computercraft.core.internet.Mac;
 import dan200.computercraft.core.internet.NetPacket;
 import dan200.computercraft.core.internet.NetStack;
@@ -184,7 +185,7 @@ public class NetworkCoreBlockEntity extends ComputerBlockEntity implements Inter
         // Anything addressed to us (or broadcast) is ours to handle. That covers DHCP, and the sockets behind the
         // `net` API.
         var forUs = frame.dst().equals(ADDRESS) || frame.dst().isBroadcast();
-        if (forUs) {
+        if (forUs && router.allowed(FirewallRule.Direction.IN, frame)) {
             if (frame.protocol() == NetPacket.PROTOCOL_UDP && frame.dstPort() == DhcpServer.SERVER_PORT) {
                 var reply = dhcp.handle(frame, System.currentTimeMillis());
                 // Reply straight back out of the port the request arrived on: the device which asked is that way.
@@ -197,6 +198,9 @@ public class NetworkCoreBlockEntity extends ComputerBlockEntity implements Inter
         // Then bridge the frame onto our other segments, so that devices on different switches can still reach each
         // other. Broadcasts are bridged too (as a real switch would), which is what lets a device find the core.
         if (frame.ttl() <= 1) return;
+
+        // Anything we pass between two segments is travelling through us, so it is subject to the forward rules.
+        if (!router.allowed(FirewallRule.Direction.FORWARD, frame)) return;
 
         var forwarded = frame.withTtl(frame.ttl() - 1);
         for (var outPort : forwardTo(frame.dstMac(), inPort)) {
