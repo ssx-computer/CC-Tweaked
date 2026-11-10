@@ -28,11 +28,9 @@ import java.util.Optional;
  * The {@code net} API, as seen by a program running on an ordinary computer which has one or more modems.
  * <p>
  * This makes the computer a host on CC's virtual network: it obtains an address with DHCP, and can then send and
- * receive messages by IP address and port. Each attached modem becomes one {@linkplain NetInterface interface} of the
- * computer's stack.
+ * receive messages by IP address and port. Each attached modem becomes one interface of the computer's stack.
  * <p>
- * The counterpart of this API is {@link NetworkAPI}, which runs on a {@link NetworkCoreBlock} and configures the
- * network itself.
+ * The counterpart of this API is {@code NetworkAPI}, which runs on a network core and configures the network itself.
  *
  * @cc.module net
  */
@@ -334,7 +332,7 @@ public class DeviceNetworkAPI implements ILuaAPI {
     }
 
     /**
-     * A {@link NetInterface} backed by one of the computer's modems.
+     * A {@code NetInterface} backed by one of the computer's modems.
      */
     private final class ModemInterface implements NetInterface {
         private final String name;

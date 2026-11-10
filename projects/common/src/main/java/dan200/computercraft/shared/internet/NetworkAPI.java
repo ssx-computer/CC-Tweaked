@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The {@code net} API, as seen by a program running on a {@link NetworkCoreBlock}.
+ * The {@code net} API, as seen by a program running on a network core.
  * <p>
  * This is the network's control plane: it exposes the leases DHCP has handed out, the firewall and routing rules, and
  * lets a program revoke a device's access by denying its MAC address.
