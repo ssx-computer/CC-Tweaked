@@ -62,8 +62,9 @@ public class NetworkCoreBlockEntity extends ComputerBlockEntity implements Inter
 
         mac = Macs.forBlock(pos, "core");
         stack = new NetStack(mac, (event, args) -> {
-            // The computer may not exist yet (or may have been removed); queueing is a no-op in that case.
-            if (getLevel() instanceof ServerLevel) getServerComputer().queueEvent(event, args);
+            // The computer may not exist yet (or the chunk may be unloading); queueing is then simply dropped.
+            var computer = getServerComputer();
+            if (computer != null) computer.queueEvent(event, args);
         });
 
         for (var side : DirectionUtil.FACINGS) {
