@@ -8,7 +8,6 @@ import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.WiredElement;
 import dan200.computercraft.api.network.wired.WiredNode;
 import dan200.computercraft.core.internet.DhcpServer;
-import dan200.computercraft.core.internet.IpAddress;
 import dan200.computercraft.core.internet.Mac;
 import dan200.computercraft.core.internet.NetPacket;
 import dan200.computercraft.core.internet.NetStack;

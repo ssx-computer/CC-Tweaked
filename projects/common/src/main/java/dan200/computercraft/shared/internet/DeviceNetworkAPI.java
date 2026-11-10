@@ -8,7 +8,6 @@ import dan200.computercraft.api.lua.ILuaAPI;
 import dan200.computercraft.api.lua.IComputerSystem;
 import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
-import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.core.internet.IpAddress;
 import dan200.computercraft.core.internet.Mac;
 import dan200.computercraft.core.internet.NetInterface;

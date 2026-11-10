@@ -7,7 +7,6 @@ package dan200.computercraft.shared.internet;
 import com.mojang.serialization.MapCodec;
 import dan200.computercraft.shared.ModRegistry;
 import dan200.computercraft.shared.computer.blocks.ComputerBlock;
-import dan200.computercraft.shared.util.BlockCodecs;
 
 /**
  * The network core: a computer which also has six network ports, and which acts as the DHCP server, router and
@@ -18,7 +17,8 @@ import dan200.computercraft.shared.util.BlockCodecs;
  * {@link NetworkCoreBlockEntity}.
  */
 public class NetworkCoreBlock extends ComputerBlock<NetworkCoreBlockEntity> {
-    private static final MapCodec<NetworkCoreBlock> CODEC = BlockCodecs.blockWithBlockEntityCodec(NetworkCoreBlock::new, x -> x.type);
+    // Our block entity type is registered for us, so we do not need to carry it through the codec as other blocks do.
+    private static final MapCodec<NetworkCoreBlock> CODEC = simpleCodec(NetworkCoreBlock::new);
 
     public NetworkCoreBlock(Properties properties) {
         super(properties, ModRegistry.BlockEntities.NETWORK_CORE);
