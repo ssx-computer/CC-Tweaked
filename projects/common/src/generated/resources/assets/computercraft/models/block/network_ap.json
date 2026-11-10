@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "computercraft:block/network_ap_top",
+    "top": "computercraft:block/network_ap_top",
+    "side": "computercraft:block/network_ap"
+  }
+}

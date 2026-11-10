@@ -80,7 +80,8 @@ class TagProvider {
             ModRegistry.Blocks.CABLE.get(),
             ModRegistry.Blocks.REDSTONE_RELAY.get(),
             ModRegistry.Blocks.NETWORK_SWITCH.get(),
-            ModRegistry.Blocks.NETWORK_CORE.get()
+            ModRegistry.Blocks.NETWORK_CORE.get(),
+            ModRegistry.Blocks.NETWORK_AP.get()
         );
 
         tags.tag(BlockTags.MINEABLE_WITH_AXE).add(ModRegistry.Blocks.LECTERN.get());

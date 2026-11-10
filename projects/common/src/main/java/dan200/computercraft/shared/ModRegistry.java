@@ -48,6 +48,8 @@ import dan200.computercraft.shared.details.ItemDetails;
 import dan200.computercraft.shared.integration.PermissionRegistry;
 import dan200.computercraft.shared.internet.DeviceNetworkAPI;
 import dan200.computercraft.shared.internet.NetworkAPI;
+import dan200.computercraft.shared.internet.NetworkApBlock;
+import dan200.computercraft.shared.internet.NetworkApBlockEntity;
 import dan200.computercraft.shared.internet.NetworkCoreAccess;
 import dan200.computercraft.shared.internet.NetworkCoreBlock;
 import dan200.computercraft.shared.internet.NetworkCoreBlockEntity;
@@ -217,6 +219,8 @@ public final class ModRegistry {
             () -> new NetworkSwitchBlock(properties().mapColor(MapColor.STONE)));
         public static final RegistryEntry<NetworkCoreBlock> NETWORK_CORE = REGISTRY.register("network_core",
             () -> new NetworkCoreBlock(redstoneConductor().mapColor(MapColor.STONE)));
+        public static final RegistryEntry<NetworkApBlock> NETWORK_AP = REGISTRY.register("network_ap",
+            () -> new NetworkApBlock(properties().mapColor(MapColor.METAL)));
     }
 
     public static class BlockEntities {
@@ -267,6 +271,8 @@ public final class ModRegistry {
             ofBlock(Blocks.NETWORK_SWITCH, (p, s) -> new NetworkSwitchBlockEntity(BlockEntities.NETWORK_SWITCH.get(), p, s));
         public static final RegistryEntry<BlockEntityType<NetworkCoreBlockEntity>> NETWORK_CORE =
             ofBlock(Blocks.NETWORK_CORE, (p, s) -> new NetworkCoreBlockEntity(BlockEntities.NETWORK_CORE.get(), p, s));
+        public static final RegistryEntry<BlockEntityType<NetworkApBlockEntity>> NETWORK_AP =
+            ofBlock(Blocks.NETWORK_AP, (p, s) -> new NetworkApBlockEntity(BlockEntities.NETWORK_AP.get(), p, s));
     }
 
     public static final class Items {
@@ -319,6 +325,7 @@ public final class ModRegistry {
         public static final RegistryEntry<BlockItem> REDSTONE_RELAY = ofBlock(Blocks.REDSTONE_RELAY, BlockItem::new);
         public static final RegistryEntry<BlockItem> NETWORK_SWITCH = ofBlock(Blocks.NETWORK_SWITCH, BlockItem::new);
         public static final RegistryEntry<BlockItem> NETWORK_CORE = ofBlock(Blocks.NETWORK_CORE, BlockItem::new);
+        public static final RegistryEntry<BlockItem> NETWORK_AP = ofBlock(Blocks.NETWORK_AP, BlockItem::new);
 
         public static final RegistryEntry<CableBlockItem.Cable> CABLE = REGISTRY.register("cable",
             () -> new CableBlockItem.Cable(Blocks.CABLE.get(), properties()));
@@ -593,6 +600,7 @@ public final class ModRegistry {
                 out.accept(Items.REDSTONE_RELAY.get());
                 out.accept(Items.NETWORK_SWITCH.get());
                 out.accept(Items.NETWORK_CORE.get());
+                out.accept(Items.NETWORK_AP.get());
 
                 out.accept(Items.MONITOR_NORMAL.get());
                 out.accept(Items.MONITOR_ADVANCED.get());
@@ -710,6 +718,7 @@ public final class ModRegistry {
         // port we want to give back.
         wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_SWITCH.get(), NetworkSwitchBlockEntity::getElement);
         wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_CORE.get(), NetworkCoreBlockEntity::getElement);
+        wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_AP.get(), NetworkApBlockEntity::getElement);
     }
 
     /**

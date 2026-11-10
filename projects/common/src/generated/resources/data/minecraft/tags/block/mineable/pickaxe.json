@@ -15,6 +15,7 @@
     "computercraft:cable",
     "computercraft:redstone_relay",
     "computercraft:network_switch",
-    "computercraft:network_core"
+    "computercraft:network_core",
+    "computercraft:network_ap"
   ]
 }

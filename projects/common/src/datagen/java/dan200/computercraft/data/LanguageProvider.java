@@ -85,6 +85,7 @@ public final class LanguageProvider implements DataProvider {
         add(ModRegistry.Items.REDSTONE_RELAY.get(), "Redstone Relay");
         add(ModRegistry.Items.NETWORK_SWITCH.get(), "Network Switch");
         add(ModRegistry.Items.NETWORK_CORE.get(), "Network Core");
+        add(ModRegistry.Items.NETWORK_AP.get(), "Network Base Station");
 
         add(ModRegistry.Items.TURTLE_NORMAL.get(), "Turtle");
         add(ModRegistry.Blocks.TURTLE_NORMAL.get().getDescriptionId() + ".upgraded", "%s Turtle");
@@ -211,6 +212,7 @@ public final class LanguageProvider implements DataProvider {
         add("gui.computercraft.tooltip.disk_id", "Disk ID: %s");
         add("gui.computercraft.tooltip.network_switch", "Bridges packets between six independent network ports, one on each side.");
         add("gui.computercraft.tooltip.network_core", "A computer which serves as the network's DHCP server, router and firewall. Each side is a separate port.");
+        add("gui.computercraft.tooltip.network_ap", "Joins wireless modems within 64 blocks to the wired network. Cable one side to the network core.");
         add("gui.computercraft.tooltip.turn_on", "Turn this computer on");
         add("gui.computercraft.tooltip.turn_off", "Turn this computer off");
         add("gui.computercraft.tooltip.turn_off.key", "Hold Ctrl+S");
