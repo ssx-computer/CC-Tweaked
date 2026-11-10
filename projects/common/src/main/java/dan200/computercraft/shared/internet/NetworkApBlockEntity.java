@@ -165,9 +165,11 @@ public class NetworkApBlockEntity extends BlockEntity implements InternetPort.Ha
     private void sendTo(int port, NetPacket frame) {
         if (port == WIRELESS_PORT) {
             var network = wirelessNetwork;
-            if (network != null) network.transmitSameDimension(
-                new Packet(InternetTransport.CHANNEL, InternetTransport.CHANNEL, frame.encode(), this), RANGE
-            );
+            if (network != null) {
+                network.transmitSameDimension(
+                    new Packet(InternetTransport.CHANNEL, InternetTransport.CHANNEL, frame.encode(), this), RANGE
+                );
+            }
         } else {
             ports[port].send(frame);
         }
