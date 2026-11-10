@@ -4,8 +4,8 @@
 
 package dan200.computercraft.shared.internet;
 
-import dan200.computercraft.api.lua.ILuaAPI;
 import dan200.computercraft.api.lua.IComputerSystem;
+import dan200.computercraft.api.lua.ILuaAPI;
 import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.core.internet.IpAddress;

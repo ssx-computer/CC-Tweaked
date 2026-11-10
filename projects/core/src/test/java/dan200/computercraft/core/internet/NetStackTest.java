@@ -19,6 +19,11 @@ class NetStackTest {
 
     /**
      * Build two stacks on the same subnet, connected by a wire. Returns the two stacks and their sinks.
+     *
+     * @param a     The first stack.
+     * @param b     The second stack.
+     * @param sinkA The event sink for the first stack.
+     * @param sinkB The event sink for the second stack.
      */
     private record Pair(NetStack a, NetStack b, TestNetwork.RecordingSink sinkA, TestNetwork.RecordingSink sinkB) {
     }

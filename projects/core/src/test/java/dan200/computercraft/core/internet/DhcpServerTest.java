@@ -49,6 +49,11 @@ class DhcpServerTest {
 
     /**
      * Perform a full DISCOVER/OFFER/REQUEST/ACK exchange, returning the address which was assigned.
+     *
+     * @param server The server to talk to.
+     * @param mac    The MAC address to lease an address for.
+     * @param now    The current time, in milliseconds since the epoch.
+     * @return The address which was assigned.
      */
     private static IpAddress lease(DhcpServer server, Mac mac, long now) {
         var offer = server.handle(discover(mac), now);
