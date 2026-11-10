@@ -271,7 +271,7 @@ public final class DhcpServer {
         leases.put(mac, new Lease(mac, address, expires, hostname, reserved));
     }
 
-    private NetPacket reply(String operation, Mac mac, IpAddress address, @Nullable String hostname, @Nullable String reason, NetPacket request) {
+    private NetPacket reply(String operation, Mac mac, @Nullable IpAddress address, @Nullable String hostname, @Nullable String reason, NetPacket request) {
         var message = new DhcpMessage(operation, mac, address, netmask, gateway, server, hostname, reason);
         var dst = request.src().isAny() || request.src().isBroadcast() ? IpAddress.BROADCAST : request.src();
         return new NetPacket(
