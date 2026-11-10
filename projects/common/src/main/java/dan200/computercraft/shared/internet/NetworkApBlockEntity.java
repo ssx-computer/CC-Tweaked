@@ -8,6 +8,7 @@ import dan200.computercraft.api.ComputerCraftAPI;
 import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.PacketNetwork;
 import dan200.computercraft.api.network.PacketReceiver;
+import dan200.computercraft.api.network.PacketSender;
 import dan200.computercraft.api.network.wired.WiredElement;
 import dan200.computercraft.core.internet.Mac;
 import dan200.computercraft.core.internet.NetPacket;
@@ -38,7 +39,7 @@ import java.util.List;
  * The wireless side behaves like one more switch port: frames arriving over the air are flooded to the wired ports, and
  * frames for a device which was last seen over the air are transmitted wirelessly rather than out of a wired port.
  */
-public class NetworkApBlockEntity extends BlockEntity implements InternetPort.Handler, PacketReceiver {
+public class NetworkApBlockEntity extends BlockEntity implements InternetPort.Handler, PacketReceiver, PacketSender {
     /**
      * The port number we use for the wireless side. The wired ports use the index of their side, so this just has to be
      * a number which cannot collide with them.
@@ -79,6 +80,11 @@ public class NetworkApBlockEntity extends BlockEntity implements InternetPort.Ha
     @Override
     public Vec3 getPosition() {
         return Vec3.atCenterOf(getBlockPos());
+    }
+
+    @Override
+    public String getSenderID() {
+        return "network_ap";
     }
 
     @Override
