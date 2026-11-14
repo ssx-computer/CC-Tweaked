@@ -411,7 +411,7 @@ local function click(x, y, button)
     local bDouble = nLastClick == index and t - nLastClickTime < 0.4
     nLastClick, nLastClickTime = index, t
 
-    nSelected = index
+    selectEntry(index)
     if bDouble then openSelected() end
 end
 
