@@ -1,0 +1,21 @@
+files is a simple file browser, designed to be opened from the desktop (but it works on any terminal).
+
+Type "files" to browse the current directory, or "files <path>" to start somewhere else.
+
+Click an entry to select it and click it again (or press enter) to open it. Directories are entered in place, text
+files are opened with "edit", paint images with "paint" and songs with "song".
+
+If the terminal is wide enough, the left-hand column lists useful locations: the root directory, the ROM, and any
+inserted disks. Click a location to switch to it.
+
+keys:
+up/down        move through the files
+page up/down   move a page at a time
+home/end       jump to the first or last file
+enter/right    open the selected file or directory
+backspace/left go to the parent directory
+tab            switch between the location column and the file list
+r              refresh
+e              eject the disk you are browsing
+h              show or hide hidden files (those starting with ".")
+q              quit

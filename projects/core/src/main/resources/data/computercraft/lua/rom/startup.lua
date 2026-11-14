@@ -56,9 +56,18 @@ shell.setCompletionFunction("rom/programs/copy.lua", completion.build(
     completion.dirOrFile
 ))
 shell.setCompletionFunction("rom/programs/delete.lua", completion.build({ completion.dirOrFile, many = true }))
+shell.setCompletionFunction("rom/programs/desktop.lua", completion.build(
+    { completion.choice, { "--install", "--uninstall", "--status", "--wallpaper", "--help" }, true },
+    function(shell, text, previous)
+        if previous[2] == "--wallpaper" then
+            return completion.choice(shell, text, previous, { "stars", "grid", "ocean", "plain" }, true)
+        end
+    end
+))
 shell.setCompletionFunction("rom/programs/drive.lua", completion.build(completion.dir))
 shell.setCompletionFunction("rom/programs/edit.lua", completion.build(completion.file))
 shell.setCompletionFunction("rom/programs/eject.lua", completion.build(completion.peripheral))
+shell.setCompletionFunction("rom/programs/files.lua", completion.build(completion.dirOrFile))
 shell.setCompletionFunction("rom/programs/gps.lua", completion.build({ completion.choice, { "host", "host ", "locate" } }))
 shell.setCompletionFunction("rom/programs/help.lua", completion.build(completion.help))
 shell.setCompletionFunction("rom/programs/id.lua", completion.build(completion.peripheral))

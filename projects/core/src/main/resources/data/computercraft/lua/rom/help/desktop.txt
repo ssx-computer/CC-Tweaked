@@ -1,0 +1,32 @@
+desktop is a graphical desktop for ComputerCraft: a wallpaper, icons, a taskbar and windows which can be moved,
+resized and minimised.
+
+Type "desktop" to start it. Each window runs a normal program, so several programs can be open at the same time.
+
+usage:
+"desktop" starts the desktop.
+"desktop --install" starts the desktop automatically when the computer boots.
+"desktop --uninstall" stops the desktop from starting automatically.
+"desktop --status" shows the current wallpaper and startup setting.
+"desktop --wallpaper stars" changes the wallpaper. The available wallpapers are stars, grid, ocean and plain.
+
+using the desktop:
+Click an icon to open its program. The menu button opens a list of every program on the computer and on any disks.
+Type in the menu to search.
+
+Drag a window by its title bar to move it. Drag its right edge, bottom edge or bottom-right corner to resize it.
+Double-click a title bar to maximise or restore a window. The [-] button minimises a window, [O] maximises it and
+[x] closes it. Click a window's taskbar button to switch to it, or to minimise it again.
+
+Right-click the desktop for a menu with the terminal, program list, wallpaper picker, startup setting and the
+option to close the desktop. Right-click a window for minimise, maximise and close.
+
+Icons for floppy disks appear when a disk is inserted. Open one to browse its files.
+
+keyboard:
+When no window is focused, use the arrow keys to choose an icon and enter to open it. Press "m" or F1 for the
+program menu. While a menu is open, use the arrow keys to choose an item, enter to select it, and type to search.
+Press backspace to clear the search (or close the menu).
+
+To start the desktop automatically, run "desktop --install". This creates a startup file at /startup/desktop.lua
+and leaves any existing /startup.lua untouched.

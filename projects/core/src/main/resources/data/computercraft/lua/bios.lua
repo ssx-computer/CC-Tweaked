@@ -713,6 +713,12 @@ settings.define("paint.default_extension", {
     type = "string",
 })
 
+settings.define("desktop.wallpaper", {
+    default = "stars",
+    description = [[The wallpaper the desktop is drawn with: "stars", "grid", "ocean" or "plain".]],
+    type = "string",
+})
+
 settings.define("list.show_hidden", {
     default = false,
     description = [[Whether the list program show  hidden files (those starting with ".").]],
