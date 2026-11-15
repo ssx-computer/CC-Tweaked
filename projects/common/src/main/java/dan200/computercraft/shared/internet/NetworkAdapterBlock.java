@@ -4,6 +4,7 @@
 
 package dan200.computercraft.shared.internet;
 
+import com.mojang.serialization.MapCodec;
 import dan200.computercraft.shared.ModRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -33,6 +34,8 @@ import org.jspecify.annotations.Nullable;
  * obvious which is which at a glance. See {@link NetworkAdapterBlockEntity} for the two halves of the bridge.
  */
 public class NetworkAdapterBlock extends HorizontalDirectionalBlock implements EntityBlock {
+    private static final MapCodec<NetworkAdapterBlock> CODEC = simpleCodec(NetworkAdapterBlock::new);
+
     /**
      * The shape of the block: a full-width base plate, with a post on top of it. As both parts are centred, the shape
      * does not depend on which way the block faces.
@@ -47,6 +50,11 @@ public class NetworkAdapterBlock extends HorizontalDirectionalBlock implements E
     public NetworkAdapterBlock(Properties properties) {
         super(properties);
         registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    protected MapCodec<? extends NetworkAdapterBlock> codec() {
+        return CODEC;
     }
 
     @Override

@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -162,8 +163,8 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
      */
     void scheduleConnectionsChanged() {
         refreshConnections = true;
-        if (getLevel() instanceof net.minecraft.server.level.ServerLevel) {
-            getLevel().scheduleTick(getBlockPos(), getBlockState().getBlock(), 0);
+        if (getLevel() instanceof ServerLevel level) {
+            level.scheduleTick(getBlockPos(), getBlockState().getBlock(), 0);
         }
     }
 
