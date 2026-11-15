@@ -39,7 +39,13 @@ repositories {
     mavenCentral()
 
     exclusiveContent {
-        forRepositories(maven("https://maven.squiddev.cc/mirror"))
+        // The mirror carries the mods we have always depended on. Modrinth itself is included as a second source, as
+        // the mirror is not a pull-through cache: it does not know about artifacts nobody has fetched before (such as
+        // AE2, for the network adapter).
+        forRepositories(
+            maven("https://maven.squiddev.cc/mirror"),
+            maven("https://api.modrinth.com/maven")
+        )
         filter {
             includeGroup("cc.tweaked")
             // Things we mirror
