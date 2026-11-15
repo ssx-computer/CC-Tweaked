@@ -190,6 +190,7 @@ dependencies {
     compileOnly(libs.bundles.externalMods.forge.compile)
     clientRuntimeOnly(libs.bundles.externalMods.forge.runtime)
     compileOnly(libs.create.forge) { isTransitive = false }
+    compileOnly(libs.ae2.neoforge) { isTransitive = false }
 
     // Depend on our other projects.
     "localImplementation"(commonClasses(project(":common")))

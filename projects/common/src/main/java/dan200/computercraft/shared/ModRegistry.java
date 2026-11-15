@@ -48,6 +48,8 @@ import dan200.computercraft.shared.details.ItemDetails;
 import dan200.computercraft.shared.integration.PermissionRegistry;
 import dan200.computercraft.shared.internet.DeviceNetworkAPI;
 import dan200.computercraft.shared.internet.NetworkAPI;
+import dan200.computercraft.shared.internet.NetworkAdapterBlock;
+import dan200.computercraft.shared.internet.NetworkAdapterBlockEntity;
 import dan200.computercraft.shared.internet.NetworkApBlock;
 import dan200.computercraft.shared.internet.NetworkApBlockEntity;
 import dan200.computercraft.shared.internet.NetworkCoreAccess;
@@ -221,6 +223,11 @@ public final class ModRegistry {
             () -> new NetworkCoreBlock(redstoneConductor().mapColor(MapColor.STONE)));
         public static final RegistryEntry<NetworkApBlock> NETWORK_AP = REGISTRY.register("network_ap",
             () -> new NetworkApBlock(properties().mapColor(MapColor.METAL)));
+
+        // The adapter joins a CC network to an AE2 one. It is registered even without AE2 (where it is simply a
+        // decoration), so that worlds keep the block if AE2 is removed.
+        public static final RegistryEntry<NetworkAdapterBlock> NETWORK_ADAPTER = REGISTRY.register("network_adapter",
+            () -> new NetworkAdapterBlock(properties().mapColor(MapColor.METAL)));
     }
 
     public static class BlockEntities {
@@ -273,6 +280,8 @@ public final class ModRegistry {
             ofBlock(Blocks.NETWORK_CORE, (p, s) -> new NetworkCoreBlockEntity(BlockEntities.NETWORK_CORE.get(), p, s));
         public static final RegistryEntry<BlockEntityType<NetworkApBlockEntity>> NETWORK_AP =
             ofBlock(Blocks.NETWORK_AP, (p, s) -> new NetworkApBlockEntity(BlockEntities.NETWORK_AP.get(), p, s));
+        public static final RegistryEntry<BlockEntityType<NetworkAdapterBlockEntity>> NETWORK_ADAPTER =
+            ofBlock(Blocks.NETWORK_ADAPTER, (p, s) -> new NetworkAdapterBlockEntity(BlockEntities.NETWORK_ADAPTER.get(), p, s));
     }
 
     public static final class Items {
@@ -326,6 +335,7 @@ public final class ModRegistry {
         public static final RegistryEntry<BlockItem> NETWORK_SWITCH = ofBlock(Blocks.NETWORK_SWITCH, BlockItem::new);
         public static final RegistryEntry<BlockItem> NETWORK_CORE = ofBlock(Blocks.NETWORK_CORE, BlockItem::new);
         public static final RegistryEntry<BlockItem> NETWORK_AP = ofBlock(Blocks.NETWORK_AP, BlockItem::new);
+        public static final RegistryEntry<BlockItem> NETWORK_ADAPTER = ofBlock(Blocks.NETWORK_ADAPTER, BlockItem::new);
 
         public static final RegistryEntry<CableBlockItem.Cable> CABLE = REGISTRY.register("cable",
             () -> new CableBlockItem.Cable(Blocks.CABLE.get(), properties()));
@@ -601,6 +611,7 @@ public final class ModRegistry {
                 out.accept(Items.NETWORK_SWITCH.get());
                 out.accept(Items.NETWORK_CORE.get());
                 out.accept(Items.NETWORK_AP.get());
+                out.accept(Items.NETWORK_ADAPTER.get());
 
                 out.accept(Items.MONITOR_NORMAL.get());
                 out.accept(Items.MONITOR_ADVANCED.get());
@@ -719,6 +730,7 @@ public final class ModRegistry {
         wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_SWITCH.get(), NetworkSwitchBlockEntity::getElement);
         wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_CORE.get(), NetworkCoreBlockEntity::getElement);
         wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_AP.get(), NetworkApBlockEntity::getElement);
+        wiredElements.registerForBlockEntity(ModRegistry.BlockEntities.NETWORK_ADAPTER.get(), NetworkAdapterBlockEntity::getElement);
     }
 
     /**

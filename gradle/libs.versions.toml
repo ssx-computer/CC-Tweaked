@@ -43,6 +43,11 @@ iris-fabric = "1.8.0-beta.3+1.21-fabric"
 iris-forge = "1.8.0-beta.3+1.21-neoforge"
 jei = "19.8.2.99"
 modmenu = "11.0.0-rc.4"
+# AE2 (Applied Energistics 2), for the network adapter. AE2's own maven is not mirrored here, so we resolve it from
+# Modrinth, and name the *version id* rather than the version number: AE2 publishes a separate jar per loader, and the
+# number alone would be ambiguous if it ever published this version for a second loader. This id is AE2 19.2.19 for
+# Minecraft 1.21.1 on NeoForge.
+ae2 = "DxZ2waV0"
 moreRed = "6.0.0.3"
 rei = "16.0.729"
 sodium-fabric = "mc1.21-0.6.0-beta.1-fabric"
@@ -108,6 +113,7 @@ complementary = {  module = "maven.modrinth:complementary-reimagined", version.r
 create-fabric = { module = "com.simibubi.create:create-fabric-1.20.1", version.ref = "create-fabric" }
 create-forge = { module = "com.simibubi.create:create-1.21.1", version.ref = "create-forge" }
 emi = { module = "dev.emi:emi-xplat-mojmap", version.ref = "emi" }
+ae2-neoforge = { module = "maven.modrinth:ae2", version.ref = "ae2" }
 fabric-api = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api" }
 fabric-junit = { module = "net.fabricmc:fabric-loader-junit", version.ref = "fabric-loader" }
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": {"model": "computercraft:block/network_adapter"},
+    "facing=east": {"model": "computercraft:block/network_adapter", "y": 90},
+    "facing=south": {"model": "computercraft:block/network_adapter", "y": 180},
+    "facing=west": {"model": "computercraft:block/network_adapter", "y": 270}
+  }
+}

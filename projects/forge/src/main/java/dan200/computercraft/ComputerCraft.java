@@ -21,6 +21,7 @@ import dan200.computercraft.shared.ModRegistry;
 import dan200.computercraft.shared.config.ConfigSpec;
 import dan200.computercraft.shared.details.FluidData;
 import dan200.computercraft.shared.integration.CreateIntegration;
+import dan200.computercraft.shared.integration.Ae2Integration;
 import dan200.computercraft.shared.integration.MoreRedIntegration;
 import dan200.computercraft.shared.network.NetworkMessage;
 import dan200.computercraft.shared.network.NetworkMessages;
@@ -79,6 +80,9 @@ public final class ComputerCraft {
         container.registerConfig(ModConfig.Type.CLIENT, ((ForgeConfigFile) ConfigSpec.clientSpec).spec());
 
         if (ModList.get().isLoaded(MoreRedIntegration.MOD_ID)) MoreRedIntegration.setup(eventBus);
+
+        // Expose the network adapter to AE2's ME network. AE2 has no 1.21.1 release on Fabric, so this is NeoForge only.
+        if (ModList.get().isLoaded(Ae2Integration.MOD_ID)) Ae2Integration.setup(eventBus);
     }
 
     private static void withEventBus(IEventBus eventBus, Runnable task) {

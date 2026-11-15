@@ -50,6 +50,11 @@ dependencies {
     compileOnly(libs.mixin)
     compileOnly(libs.mixinExtra)
     compileOnly(libs.bundles.externalMods.common)
+
+    // AE2, for the network adapter. Compile-time only - the AE2 half of the adapter is guarded by an isModLoaded check,
+    // so nothing AE2-shaped is ever loaded without AE2. Transitives are excluded: AE2's own dependencies must not leak
+    // into our compile classpath.
+    compileOnly(libs.ae2.neoforge) { isTransitive = false }
     clientCompileOnly(variantOf(libs.emi) { classifier("api") })
 
     annotationProcessorEverywhere(libs.autoService)

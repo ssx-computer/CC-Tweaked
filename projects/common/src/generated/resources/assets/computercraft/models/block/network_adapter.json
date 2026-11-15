@@ -1,0 +1,37 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "computercraft:block/network_adapter_side",
+    "base": "computercraft:block/network_adapter_base",
+    "side": "computercraft:block/network_adapter_side",
+    "top": "computercraft:block/network_adapter_top",
+    "cc": "computercraft:block/network_adapter_cc",
+    "ae2": "computercraft:block/network_adapter_ae2"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 4, 16],
+      "faces": {
+        "down": {"texture": "#base", "cullface": "down"},
+        "up": {"texture": "#base"},
+        "north": {"texture": "#base"},
+        "south": {"texture": "#base"},
+        "west": {"texture": "#base"},
+        "east": {"texture": "#base"}
+      }
+    },
+    {
+      "from": [4, 4, 0],
+      "to": [12, 14, 16],
+      "faces": {
+        "down": {"texture": "#base"},
+        "up": {"texture": "#top"},
+        "north": {"texture": "#cc"},
+        "south": {"texture": "#ae2"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    }
+  ]
+}
