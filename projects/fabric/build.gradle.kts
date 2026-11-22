@@ -74,6 +74,9 @@ val testWithIrisShadersResolve = configurations.resolvable("testWithIrisShadersR
 
 dependencies {
     clientCompileOnly(variantOf(libs.emi) { classifier("api") })
+    // AE2 is NeoForge-only; we only use it for javac signature-checking of the common sources compiled under
+    // this project, and never load it at runtime.
+    compileOnly(libs.ae2.neoforge) { isTransitive = false }
     modCompileOnly(libs.bundles.externalMods.fabric.compile) {
         exclude("net.fabricmc", "fabric-loader")
         exclude("net.fabricmc.fabric-api")
