@@ -6,7 +6,6 @@ package dan200.computercraft.shared.internet;
 
 import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.WiredElement;
-import dan200.computercraft.core.internet.Mac;
 import dan200.computercraft.shared.internet.ae2.Ae2Compat;
 import dan200.computercraft.shared.platform.ComponentAccess;
 import dan200.computercraft.shared.platform.PlatformHelper;
