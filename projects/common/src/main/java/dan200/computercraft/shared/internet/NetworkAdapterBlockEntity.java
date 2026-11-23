@@ -19,6 +19,8 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Map;
+
 /**
  * The block entity for a {@link NetworkAdapterBlock}: one half speaks CC's networking cable, the other speaks AE2's ME
  * network.
@@ -58,6 +60,16 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
      * read into it), but the node itself cannot join the grid until the block entity is in a loaded chunk.
      */
     private boolean ae2Created = false;
+
+    /**
+     * The CC peripheral exposing the ME network, only present on the CC network while an ME network is reachable.
+     */
+    private final NetworkAdapterPeripheral peripheral = new NetworkAdapterPeripheral(this);
+
+    /**
+     * Whether the peripheral is currently announced on the CC network. Toggled by {@link #refreshPeripheral()}.
+     */
+    private boolean peripheralPresent = false;
 
     public NetworkAdapterBlockEntity(BlockEntityType<? extends NetworkAdapterBlockEntity> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -146,6 +158,42 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
         }
 
         if (refreshConnections) connectionsChanged();
+
+        refreshPeripheral();
+    }
+
+    /**
+     * Announce (or withdraw) the {@link NetworkAdapterPeripheral} on the CC network, depending on whether the adapter
+     * currently has an active ME network to expose.
+     */
+    private void refreshPeripheral() {
+        if (getLevel() == null || getLevel().isClientSide) return;
+
+        var host = ae2Host;
+        var active = host != null && Ae2Compat.isGridActive(host);
+        if (active == peripheralPresent) return;
+
+        peripheralPresent = active;
+        // Only update when the state actually changes, to avoid broadcasting a network change every tick.
+        ccPort.getNode().updatePeripherals(active ? Map.of(peripheralName(), peripheral) : Map.of());
+    }
+
+    /**
+     * The name the {@link NetworkAdapterPeripheral} is announced under on the CC network.
+     *
+     * @return The peripheral's name.
+     */
+    private String peripheralName() {
+        return "me" + getBlockPos().toShortString();
+    }
+
+    /**
+     * Called by {@link Ae2Compat} when the AE2 grid's state changes, so the CC peripheral can be re-announced.
+     */
+    public void onAe2GridChanged() {
+        if (getLevel() instanceof ServerLevel level) {
+            level.scheduleTick(getBlockPos(), getBlockState().getBlock(), 0);
+        }
     }
 
     /**
