@@ -42,7 +42,7 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
      * @return Whether an ME network is reachable.
      */
     @LuaFunction(mainThread = true)
-    public final boolean isConnected() {
+    public boolean isConnected() {
         var host = adapter.getAe2Host();
         return host != null && Ae2Compat.isGridActive(host);
     }
@@ -54,7 +54,7 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
      * @throws LuaException If the adapter is not connected to an ME network.
      */
     @LuaFunction(mainThread = true)
-    public final List<Map<String, Object>> getItems() throws LuaException {
+    public List<Map<String, Object>> getItems() throws LuaException {
         var host = checkHost();
         return Ae2Compat.getItems(host);
     }
@@ -66,7 +66,7 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
      * @throws LuaException If the adapter is not connected to an ME network.
      */
     @LuaFunction(mainThread = true)
-    public final List<Map<String, Object>> getCells() throws LuaException {
+    public List<Map<String, Object>> getCells() throws LuaException {
         var host = checkHost();
         return Ae2Compat.getCells(host);
     }
@@ -78,7 +78,7 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
      * @throws LuaException If the adapter is not connected to an ME network.
      */
     @LuaFunction(mainThread = true)
-    public final Map<String, Object> getPower() throws LuaException {
+    public Map<String, Object> getPower() throws LuaException {
         var host = checkHost();
         return Ae2Compat.getPower(host);
     }
@@ -90,7 +90,7 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
      * @throws LuaException If the adapter is not connected to an ME network.
      */
     @LuaFunction(mainThread = true)
-    public final List<Map<String, Object>> getCraftable() throws LuaException {
+    public List<Map<String, Object>> getCraftable() throws LuaException {
         var host = checkHost();
         return Ae2Compat.getCraftable(host);
     }

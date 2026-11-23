@@ -209,6 +209,8 @@ public final class Ae2Compat {
      *
      * @param key   The key.
      * @param count The amount stored (0 for a craftable with no known quantity).
+     * @return A {@code { name, display, count, type, amountPerUnit }} map, or {@code null} if the stack cannot be
+     *     described.
      */
     private static @Nullable Map<String, Object> itemInfo(AEKey key, long count) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -233,6 +235,7 @@ public final class Ae2Compat {
      * @param slot   The slot in its drive (or 0 for an ME chest).
      * @param status The AE2 cell status, such as {@code EMPTY}, {@code TYPES} or {@code CELLS}.
      * @param pos    The block the cell lives in.
+     * @return A {@code { slot, id, display, status, location }} map.
      */
     private static Map<String, Object> cellInfo(ItemStack stack, int slot, String status, BlockPos pos) {
         Map<String, Object> result = new LinkedHashMap<>();
