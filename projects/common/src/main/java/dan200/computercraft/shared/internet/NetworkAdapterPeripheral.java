@@ -96,6 +96,34 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
     }
 
     /**
+     * Push a stack of items into the connected ME network.
+     *
+     * @param name  The Minecraft item id, such as {@code minecraft:cobblestone}.
+     * @param count The number of items to push.
+     * @return The number of items actually stored.
+     * @throws LuaException If the adapter is not connected to an ME network.
+     */
+    @LuaFunction(mainThread = true)
+    public long pushItem(String name, long count) throws LuaException {
+        var host = checkHost();
+        return Ae2Compat.pushItem(host, name, count);
+    }
+
+    /**
+     * Pull a stack of items out of the connected ME network.
+     *
+     * @param name  The Minecraft item id, such as {@code minecraft:cobblestone}.
+     * @param count The number of items to pull.
+     * @return The number of items actually extracted.
+     * @throws LuaException If the adapter is not connected to an ME network.
+     */
+    @LuaFunction(mainThread = true)
+    public long extractItem(String name, long count) throws LuaException {
+        var host = checkHost();
+        return Ae2Compat.extractItem(host, name, count);
+    }
+
+    /**
      * Get the AE2 host, or fail if the adapter has no AE2 half.
      *
      * @return The AE2 host.

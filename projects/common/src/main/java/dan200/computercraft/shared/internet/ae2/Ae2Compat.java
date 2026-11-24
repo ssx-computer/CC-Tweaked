@@ -4,12 +4,14 @@
 
 package dan200.computercraft.shared.internet.ae2;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.util.AECableType;
@@ -19,7 +21,9 @@ import dan200.computercraft.shared.ModRegistry;
 import dan200.computercraft.shared.internet.NetworkAdapterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
@@ -170,7 +174,7 @@ public final class Ae2Compat {
      * Get the ME network's energy/power state.
      *
      * @param host The host, as returned by {@link #createHost}.
-     * @return A {@code { stored, max, avgUsage, powered }} map.
+     * @return A {@code { stored, max, avgUsage, idlePower, channelPower, powered }} map.
      */
     public static Map<String, Object> getPower(Object host) {
         var node = ((Ae2GridNodeHost) host).node.getNode();
@@ -181,6 +185,8 @@ public final class Ae2Compat {
         result.put("stored", energy.getStoredPower());
         result.put("max", energy.getMaxStoredPower());
         result.put("avgUsage", energy.getAvgPowerUsage());
+        result.put("idlePower", energy.getIdlePowerUsage());
+        result.put("channelPower", energy.getChannelPowerUsage());
         result.put("powered", energy.isNetworkPowered());
         return result;
     }
@@ -202,6 +208,57 @@ public final class Ae2Compat {
             if (item != null) result.add(item);
         }
         return result;
+    }
+
+    /**
+     * Push a stack of items into the ME network's storage.
+     *
+     * @param host  The host, as returned by {@link #createHost}.
+     * @param name  The Minecraft item id, such as {@code minecraft:cobblestone}.
+     * @param count The number of items to push (at least 1).
+     * @return The number of items actually stored (may be fewer than {@code count} if storage is full).
+     */
+    public static long pushItem(Object host, String name, long count) {
+        var node = ((Ae2GridNodeHost) host).node.getNode();
+        if (node == null || node.getGrid() == null || count <= 0) return 0;
+
+        var stack = findItemStack(name);
+        if (stack.isEmpty()) return 0;
+
+        var storage = node.getGrid().getStorageService().getInventory();
+        return storage.insert(AEItemKey.of(stack), count, Actionable.MODULATE, IActionSource.empty());
+    }
+
+    /**
+     * Pull a stack of items out of the ME network's storage.
+     *
+     * @param host  The host, as returned by {@link #createHost}.
+     * @param name  The Minecraft item id, such as {@code minecraft:cobblestone}.
+     * @param count The number of items to pull (at least 1).
+     * @return The number of items actually extracted (may be fewer than {@code count} if not enough are stored).
+     */
+    public static long extractItem(Object host, String name, long count) {
+        var node = ((Ae2GridNodeHost) host).node.getNode();
+        if (node == null || node.getGrid() == null || count <= 0) return 0;
+
+        var stack = findItemStack(name);
+        if (stack.isEmpty()) return 0;
+
+        var storage = node.getGrid().getStorageService().getInventory();
+        return storage.extract(AEItemKey.of(stack), count, Actionable.MODULATE, IActionSource.empty());
+    }
+
+    /**
+     * Resolve an item id to an {@link ItemStack}. Unknown ids resolve to an empty stack.
+     *
+     * @param name The Minecraft item id, such as {@code minecraft:cobblestone}.
+     * @return An {@link ItemStack} for the item, or {@link ItemStack#EMPTY} if the id is unknown.
+     */
+    private static ItemStack findItemStack(String name) {
+        if (name == null || name.isEmpty()) return ItemStack.EMPTY;
+        var key = ResourceLocation.tryParse(name);
+        if (key == null) return ItemStack.EMPTY;
+        return new ItemStack(BuiltInRegistries.ITEM.get(key));
     }
 
     /**

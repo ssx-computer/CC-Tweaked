@@ -186,7 +186,7 @@
     "gui.computercraft.tooltip.disk_id": "软盘ID：%s",
     "gui.computercraft.tooltip.network_core": "一台作为网络 DHCP 服务器、路由器与防火墙的计算机，每一面都是独立的网络端口。",
   "gui.computercraft.tooltip.network_ap": "把 64 格内的无线网卡接入有线网络。把任一面用网线接到网络核心即可。",
-  "gui.computercraft.tooltip.network_adapter": "把 CC 网络与 AE2 的 ME 网络连接起来：正面接 CC 网线，背面接 AE2 电缆。\nME 那一侧需要安装 Applied Energistics 2。\nCC 电脑可把它作为只读外设（network_adapter）来查看 ME 存储。",
+  "gui.computercraft.tooltip.network_adapter": "把 CC 网络与 AE2 的 ME 网络连接起来：正面接 CC 网线，背面接 AE2 电缆。\nME 那一侧需要安装 Applied Energistics 2。\nCC 电脑可把它作为外设（network_adapter）来读写 ME 存储。",
     "gui.computercraft.tooltip.network_switch": "在六个独立网络端口之间桥接报文，每个面一个端口。",
     "gui.computercraft.tooltip.terminate": "停止当前运行的代码",
     "gui.computercraft.tooltip.terminate.key": "按住 Ctrl+T",
