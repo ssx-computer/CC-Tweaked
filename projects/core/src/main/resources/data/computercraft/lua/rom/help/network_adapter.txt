@@ -1,0 +1,39 @@
+The "network_adapter" block connects a ComputerCraft network to an Applied Energistics 2 ME
+network. Attach a CC cable to the front and an AE2 cable to the back. It needs Applied
+Energistics 2 installed.
+
+When the adapter is joined to an active ME network it appears on the CC network as a
+"network_adapter" peripheral (named "me<location>"), which you can wrap with
+peripheral.wrap(). It gives a computer read/write access to the ME network's storage.
+
+Methods:
+
+  isConnected()
+    Whether the adapter currently has an active ME network to talk to.
+
+  getItems()
+    Returns a list of every stack stored in the ME network, as
+    { name, display, count, type, amountPerUnit } tables. The "name" is the Minecraft item
+    id, such as "minecraft:cobblestone", which you can use with pushItem()/extractItem().
+
+  getCells()
+    Returns a list of every storage cell in ME drives and ME chests on the network, as
+    { slot, name, display, status, location } tables.
+
+  getPower()
+    Returns the ME network's power state as
+    { stored, max, avgUsage, idlePower, channelPower, powered }.
+
+  getCraftable()
+    Returns a list of every item the ME network can craft, as
+    { name, display, count, type } tables.
+
+  pushItem(name, count)
+    Store "count" of the given item (by id, e.g. "minecraft:cobblestone") into the ME
+    network. Returns the number actually stored.
+
+  extractItem(name, count)
+    Pull "count" of the given item out of the ME network. Returns the number actually
+    extracted.
+
+Example: print("stored", peripheral.wrap("me0").getItems())

@@ -1,0 +1,35 @@
+"network_adapter"（网络交换器）方块把 ComputerCraft 网络与 Applied Energistics 2 的
+ME 网络连接起来：正面接 CC 网线，背面接 AE2 电缆。需要安装 Applied Energistics 2。
+
+当交换器连上一个激活的 ME 网络时，它会作为 "network_adapter" 外设出现在 CC 网络上
+（名为 "me<位置>"），可以用 peripheral.wrap() 获取。它让电脑可以读写 ME 网络的存储。
+
+方法：
+
+  isConnected()
+    交换器当前是否连上了激活的 ME 网络。
+
+  getItems()
+    返回 ME 网络中存储的每种物品列表，形如 { name, display, count, type,
+    amountPerUnit }。其中 "name" 是物品的 Minecraft id，如 "minecraft:cobblestone"，
+    可用于 pushItem()/extractItem()。
+
+  getCells()
+    返回网络上 ME 驱动器和 ME 箱子中每个存储单元的列表，形如 { slot, name, display,
+    status, location }。
+
+  getPower()
+    返回 ME 网络的能量状态，形如 { stored, max, avgUsage, idlePower, channelPower,
+    powered }。
+
+  getCraftable()
+    返回 ME 网络能合成的每种物品列表，形如 { name, display, count, type }。
+
+  pushItem(name, count)
+    把 "count" 个给定 id（如 "minecraft:cobblestone"）的物品存入 ME 网络。返回实际
+    存入的数量。
+
+  extractItem(name, count)
+    从 ME 网络取出 "count" 个给定 id 的物品。返回实际取出的数量。
+
+示例：print("stored", peripheral.wrap("me0").getItems())
