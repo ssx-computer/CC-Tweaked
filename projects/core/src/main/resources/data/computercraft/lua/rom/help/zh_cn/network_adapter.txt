@@ -33,3 +33,32 @@ ME 网络连接起来：正面接 CC 网线，背面接 AE2 电缆。需要安�
     从 ME 网络取出 "count" 个给定 id 的物品。返回实际取出的数量。
 
 示例：print("stored", peripheral.wrap("me0").getItems())
+
+通过虚拟网络访问 ME
+--------------------
+
+交换器同时也是 CC 虚拟网络上的一个主机。当它连上激活的 ME 网络时，它会加入虚拟网络，
+并在一个 UDP 端口上提供同样的方法，因此电脑可以经过 network_core 读取或写入 ME 存储，
+而无需用网线接到交换器。
+
+最简便的方式是使用 "cc.me" 模块，它会帮你打开套接字、发送请求并返回答复。它通过
+广播来寻找交换器：
+
+    local me = require("cc.me")
+    print(me.getItems())
+    me.pushItem({ name = "minecraft:cobblestone", count = 64 })
+
+每个方法接收一个附加参数表和一个可选的交换器地址。若要指定某个交换器，请传入它的
+虚拟网络地址：me.getItems({}, "10.0.0.5")。
+
+如果你想直接用原生 "net" API：在端口 19781（即 ASCII 的 "ME"）上监听，向
+255.255.255.255 广播一条 JSON 请求，然后读取答复：
+
+    local socket = net.listen(19781)
+    net.send("255.255.255.255", 19781, textutils.serializeJSON({ id = "1", op = "getPower" }), socket)
+
+请求是一个带有 "op" 和可选 "id" 的 JSON 对象。答复在成功时为 {"ok":true,"id":...,"result":...}，
+失败时为 {"ok":false,"error":"..."}。
+
+合法的操作有 isConnected、getItems、getCells、getPower、getCraftable、pushItem（传入
+"name" 和 "count"）以及 extractItem（传入 "name" 和 "count"）。

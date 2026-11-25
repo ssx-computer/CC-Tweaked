@@ -6,6 +6,8 @@ package dan200.computercraft.shared.internet;
 
 import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.WiredElement;
+import dan200.computercraft.core.internet.NetPacket;
+import dan200.computercraft.core.internet.NetStack;
 import dan200.computercraft.shared.internet.ae2.Ae2Compat;
 import dan200.computercraft.shared.platform.ComponentAccess;
 import dan200.computercraft.shared.platform.PlatformHelper;
@@ -19,6 +21,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -71,11 +74,40 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
      */
     private boolean peripheralPresent = false;
 
+    /**
+     * This adapter's virtual IP stack, used to join the CC virtual network and answer ME requests over it.
+     * <p>
+     * Like {@link #ccPort}, this is created in the constructor and so is always present; it only becomes useful once
+     * the adapter has been told to join the network.
+     */
+    private final NetStack netStack;
+
+    /**
+     * The id of the socket which serves ME requests on {@link #ME_PORT}, or {@code -1} if we have not opened one yet.
+     */
+    private int meSocket = -1;
+
+    /**
+     * Whether this adapter has asked to join the CC virtual network yet.
+     */
+    private boolean netJoined = false;
+
+    /**
+     * When we last asked for an address, in milliseconds since the epoch. Used to retry DHCP until a core appears.
+     */
+    private long lastDhcp = Long.MIN_VALUE;
+
+    /**
+     * How often we re-broadcast a DHCP request, in milliseconds, until we have an address.
+     */
+    private static final long DHCP_RETRY_MS = 5000;
+
     public NetworkAdapterBlockEntity(BlockEntityType<? extends NetworkAdapterBlockEntity> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
 
         var mac = Macs.forBlock(pos, "adapter");
         ccPort = new InternetPort(this, DEFAULT_CC_SIDE, mac, "adapter:cc", this);
+        netStack = new NetStack(mac, null);
 
         // Create the AE2 half up front, so that loadAdditional can feed it its saved state. This is the only place
         // which touches AE2 outside of a tick, and it is guarded, so nothing AE2-shaped is loaded without AE2.
@@ -160,6 +192,8 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
         if (refreshConnections) connectionsChanged();
 
         refreshPeripheral();
+
+        netTick();
     }
 
     /**
@@ -217,8 +251,79 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
 
     @Override
     public void onPacket(InternetPort port, Packet packet) {
-        // Joining the ME network to CC's virtual network is the next step; for now the adapter only provides the
-        // physical connection between the two cable systems.
+        // Only virtual-network (IP) frames are of interest to us; a modem's other channels are ignored.
+        if (packet.channel() != InternetTransport.CHANNEL) return;
+        if (!(packet.payload() instanceof byte[] data)) return;
+
+        NetPacket frame;
+        try {
+            frame = NetPacket.decode(data);
+        } catch (IllegalArgumentException e) {
+            // A malformed frame. Nothing sensible we can do with it.
+            return;
+        }
+
+        netStack.receive(port, frame);
+    }
+
+    /**
+     * Join CC's virtual network and serve ME requests over it.
+     * <p>
+     * The adapter only joins once AE2 is installed, and opens a single UDP socket on {@link #ME_PORT} which translates
+     * between virtual-network messages and ME storage operations (see {@link Ae2Compat#handleRequest}).
+     */
+    private void netTick() {
+        if (getLevel() == null || getLevel().isClientSide) return;
+        if (ae2Host == null) return;
+
+        if (!netJoined) {
+            netJoined = true;
+            // The adapter is a device on the virtual network, just as a computer or core is.
+            netStack.addInterface(ccPort);
+            netStack.requestDhcp();
+        }
+
+        // Retry DHCP until we have an address, so an adapter placed before its network core is set up still joins
+        // once the core appears.
+        var now = System.currentTimeMillis();
+        if (netStack.address() == null && now - lastDhcp >= DHCP_RETRY_MS) {
+            lastDhcp = now;
+            netStack.requestDhcp();
+        }
+
+        // We can listen before we have an address: we simply won't receive unicast requests until DHCP replies.
+        if (meSocket < 0) {
+            try {
+                meSocket = netStack.listen(ME_PORT);
+            } catch (IllegalArgumentException e) {
+                // Should not happen: we only ever bind this one port. Leave it unset so we try again next tick.
+            }
+        }
+
+        netStack.tick(now);
+        handleMeSocket();
+    }
+
+    /**
+     * Answer any ME requests which have arrived on our socket.
+     * <p>
+     * Each request is answered with a unicast reply back to the sender, so a requester can open a socket, send a
+     * request (broadcast or unicast) and wait for the reply on that socket.
+     */
+    private void handleMeSocket() {
+        if (meSocket < 0) return;
+        var socket = netStack.socket(meSocket);
+        if (socket == null) return;
+
+        var host = ae2Host;
+        if (host == null) return;
+
+        for (var message : socket.drain()) {
+            var request = new String(message.payload(), StandardCharsets.UTF_8);
+            var reply = Ae2Compat.handleRequest(host, request);
+            // Sending is a no-op until we have an address, so a request we cannot answer is simply dropped.
+            netStack.send(message.from(), message.port(), ME_PORT, NetPacket.PROTOCOL_UDP, reply.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
     @Override
@@ -226,6 +331,7 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
         super.setRemoved();
         if (level == null || !level.isClientSide) {
             ccPort.remove();
+            netStack.closeAll();
             var host = ae2Host;
             if (host != null) {
                 Ae2Compat.destroy(host);
@@ -260,4 +366,10 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
      * property, which should not happen.
      */
     private static final Direction DEFAULT_CC_SIDE = Direction.NORTH;
+
+    /**
+     * The UDP port the adapter serves ME requests on over CC's virtual network. This is the ASCII pair "ME"
+     * ({@code 0x4D45}), chosen to be easy to remember and unlikely to collide with a modem's other ports.
+     */
+    static final int ME_PORT = 0x4D45;
 }

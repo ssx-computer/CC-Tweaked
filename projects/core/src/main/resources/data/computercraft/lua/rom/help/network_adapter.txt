@@ -37,3 +37,32 @@ Methods:
     extracted.
 
 Example: print("stored", peripheral.wrap("me0").getItems())
+
+Accessing ME over the virtual network
+------------------------------------
+
+An adapter is also a host on CC's virtual network. It joins it when it has an active ME
+network, and serves the same methods over a UDP socket, so a computer can read and write ME
+storage through a network_core without a wired connection to the adapter.
+
+The easiest way is the "cc.me" module, which opens a socket for you, sends a request, and
+returns the reply. It broadcasts to find an adapter:
+
+    local me = require("cc.me")
+    print(me.getItems())
+    me.pushItem({ name = "minecraft:cobblestone", count = 64 })
+
+Each method takes a table of extra arguments and an optional adapter address. To talk to a
+specific adapter, pass its virtual-network address: me.getItems({}, "10.0.0.5").
+
+If you would rather use the raw "net" API: listen on port 19781 (the ASCII "ME"), send a
+JSON request broadcast to 255.255.255.255, and drain the reply:
+
+    local socket = net.listen(19781)
+    net.send("255.255.255.255", 19781, textutils.serializeJSON({ id = "1", op = "getPower" }), socket)
+
+A request is a JSON object with an "op" and an optional "id". The reply is
+{"ok":true,"id":...,"result":...} on success, or {"ok":false,"error":"..."} on failure.
+
+The valid operations are isConnected, getItems, getCells, getPower, getCraftable, pushItem
+(pass "name" and "count") and extractItem (pass "name" and "count").

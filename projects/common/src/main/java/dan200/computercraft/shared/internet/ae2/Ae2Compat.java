@@ -17,6 +17,10 @@ import appeng.api.stacks.AEKey;
 import appeng.api.util.AECableType;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import dan200.computercraft.shared.ModRegistry;
 import dan200.computercraft.shared.internet.NetworkAdapterBlockEntity;
 import net.minecraft.core.BlockPos;
@@ -48,6 +52,11 @@ public final class Ae2Compat {
      * How much power the adapter draws from the ME network while idle.
      */
     private static final double IDLE_POWER = 1.0;
+
+    /**
+     * Serialiser for the JSON request/response protocol spoken over CC's virtual network.
+     */
+    private static final Gson GSON = new Gson();
 
     private Ae2Compat() {
     }
@@ -246,6 +255,103 @@ public final class Ae2Compat {
 
         var storage = node.getGrid().getStorageService().getInventory();
         return storage.extract(AEItemKey.of(stack), count, Actionable.MODULATE, IActionSource.empty());
+    }
+
+    /**
+     * Handle a single request from a CC computer over the virtual network, returning a response to send back.
+     * <p>
+     * The request is a JSON object with an {@code op} field naming the operation, and any fields it needs. The
+     * response is a JSON object with an {@code ok} boolean: {@code {"ok":true,"result":...}} on success, or
+     * {@code {"ok":false,"error":"..."}} on failure.
+     * <p>
+     * This is the only entry point through which CC's virtual network talks to the ME network; it keeps every AE2
+     * call inside this class.
+     *
+     * @param host    The host, as returned by {@link #createHost}.
+     * @param request The JSON request.
+     * @return The JSON response.
+     */
+    public static String handleRequest(Object host, String request) {
+        JsonObject req;
+        try {
+            req = JsonParser.parseString(request).getAsJsonObject();
+        } catch (JsonParseException | IllegalStateException e) {
+            return GSON.toJson(Map.of("ok", false, "error", "Malformed request."));
+        }
+
+        String op;
+        try {
+            op = req.has("op") ? req.get("op").getAsString() : "";
+        } catch (IllegalStateException e) {
+            return GSON.toJson(Map.of("ok", false, "error", "'op' must be a string."));
+        }
+
+        try {
+            Object result = switch (op) {
+                case "isConnected" -> Map.of("connected", isGridActive(host));
+                case "getItems" -> getItems(host);
+                case "getCells" -> getCells(host);
+                case "getPower" -> getPower(host);
+                case "getCraftable" -> getCraftable(host);
+                case "pushItem" -> {
+                    var name = getString(req, "name");
+                    var count = getLong(req, "count", 1);
+                    if (count <= 0) throw new IllegalArgumentException("count must be positive.");
+                    yield Map.of("stored", pushItem(host, name, count));
+                }
+                case "extractItem" -> {
+                    var name = getString(req, "name");
+                    var count = getLong(req, "count", 1);
+                    if (count <= 0) throw new IllegalArgumentException("count must be positive.");
+                    yield Map.of("extracted", extractItem(host, name, count));
+                }
+                default -> throw new IllegalArgumentException("Unknown operation '" + op + "'.");
+            };
+
+            // Echo any request id back, so a caller can correlate replies with pipelined requests.
+            var reply = new LinkedHashMap<String, Object>();
+            reply.put("ok", true);
+            if (req.has("id")) reply.put("id", req.get("id").getAsString());
+            reply.put("result", result);
+            return GSON.toJson(reply);
+        } catch (IllegalArgumentException e) {
+            return GSON.toJson(Map.of("ok", false, "error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Read a required string field from a request.
+     *
+     * @param req The request object.
+     * @param key The field name.
+     * @return The field's value.
+     * @throws IllegalArgumentException If the field is missing or not a string.
+     */
+    private static String getString(JsonObject req, String key) {
+        if (!req.has(key)) throw new IllegalArgumentException("'" + key + "' is required.");
+        try {
+            return req.get(key).getAsString();
+        } catch (IllegalStateException e) {
+            throw new IllegalArgumentException("'" + key + "' must be a string.");
+        }
+    }
+
+    /**
+     * Read an optional number field from a request.
+     *
+     * @param req    The request object.
+     * @param key    The field name.
+     * @param def    The default value.
+     * @return The field's value, or the default if the field is absent.
+     * @throws IllegalArgumentException If the field is present but not a number.
+     */
+    private static long getLong(JsonObject req, String key, long def) {
+        if (!req.has(key)) return def;
+        try {
+            return req.get(key).getAsLong();
+        } catch (IllegalStateException e) {
+            throw new IllegalArgumentException("'" + key + "' must be a number.");
+        }
     }
 
     /**
