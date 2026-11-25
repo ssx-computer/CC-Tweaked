@@ -16,6 +16,7 @@
 --
 -- @module cc.me
 -- @since 1.120.2
+
 local expect = require("cc.expect").expect
 
 --- The port the adapter's ME service listens on.
