@@ -4,6 +4,8 @@
 
 package dan200.computercraft.shared.internet;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.peripheral.IPeripheral;
@@ -12,6 +14,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The CC-side peripheral of a {@link NetworkAdapterBlock}. It exposes the connected ME network's storage to a computer
@@ -100,13 +103,20 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
      *
      * @param name  The Minecraft item id, such as {@code minecraft:cobblestone}.
      * @param count The number of items to push.
+     * @param key   The authentication key, or {@code null}. Only required once the adapter is locked.
      * @return The number of items actually stored.
-     * @throws LuaException If the adapter is not connected to an ME network.
+     * @throws LuaException If the adapter is not connected to an ME network, or the write is unauthorised.
      */
     @LuaFunction(mainThread = true)
-    public long pushItem(String name, long count) throws LuaException {
+    public long pushItem(String name, long count, @Nullable String key) throws LuaException {
         var host = checkHost();
-        return Ae2Compat.pushItem(host, name, count);
+        var req = new JsonObject();
+        req.addProperty("op", "pushItem");
+        req.addProperty("name", name);
+        req.addProperty("count", count);
+        if (key != null) req.addProperty("key", key);
+        var reply = handleAuth(host, req);
+        return reply.get("result").getAsJsonObject().get("stored").getAsLong();
     }
 
     /**
@@ -114,13 +124,74 @@ public final class NetworkAdapterPeripheral implements IPeripheral {
      *
      * @param name  The Minecraft item id, such as {@code minecraft:cobblestone}.
      * @param count The number of items to pull.
+     * @param key   The authentication key, or {@code null}. Only required once the adapter is locked.
      * @return The number of items actually extracted.
+     * @throws LuaException If the adapter is not connected to an ME network, or the write is unauthorised.
+     */
+    @LuaFunction(mainThread = true)
+    public long extractItem(String name, long count, @Nullable String key) throws LuaException {
+        var host = checkHost();
+        var req = new JsonObject();
+        req.addProperty("op", "extractItem");
+        req.addProperty("name", name);
+        req.addProperty("count", count);
+        if (key != null) req.addProperty("key", key);
+        var reply = handleAuth(host, req);
+        return reply.get("result").getAsJsonObject().get("extracted").getAsLong();
+    }
+
+    /**
+     * Send an authentication-aware request to the adapter and turn a failure into a Lua error.
+     *
+     * @param host The adapter host.
+     * @param req  The request to send.
+     * @return The parsed reply.
+     * @throws LuaException If the request failed.
+     */
+    private static JsonObject handleAuth(Object host, JsonObject req) throws LuaException {
+        var reply = JsonParser.parseString(Ae2Compat.handleRequest(host, req.toString())).getAsJsonObject();
+        if (!reply.get("ok").getAsBoolean()) throw new LuaException(reply.get("error").getAsString());
+        return reply;
+    }
+
+    /**
+     * Register or replace a key's write permissions.
+     *
+     * @param key   The key to register.
+     * @param items The item ids the key may write, or {@code null} for every item.
+     * @return Whether the key already existed.
      * @throws LuaException If the adapter is not connected to an ME network.
      */
     @LuaFunction(mainThread = true)
-    public long extractItem(String name, long count) throws LuaException {
+    public boolean addAuthKey(String key, @Nullable String[] items) throws LuaException {
         var host = checkHost();
-        return Ae2Compat.extractItem(host, name, count);
+        if (items == null) return Ae2Compat.addAuthKey(host, key, Set.of(NetworkAdapterBlockEntity.AUTH_ALL));
+        return Ae2Compat.addAuthKey(host, key, Set.of(items));
+    }
+
+    /**
+     * Remove a key's permissions.
+     *
+     * @param key The key to remove.
+     * @return Whether the key existed.
+     * @throws LuaException If the adapter is not connected to an ME network.
+     */
+    @LuaFunction(mainThread = true)
+    public boolean removeAuthKey(String key) throws LuaException {
+        var host = checkHost();
+        return Ae2Compat.removeAuthKey(host, key);
+    }
+
+    /**
+     * List every key and the items it may write to.
+     *
+     * @return A map of each key to the list of item ids it may write.
+     * @throws LuaException If the adapter is not connected to an ME network.
+     */
+    @LuaFunction(mainThread = true)
+    public Map<String, List<String>> listAuth() throws LuaException {
+        var host = checkHost();
+        return Ae2Compat.listAuth(host);
     }
 
     /**

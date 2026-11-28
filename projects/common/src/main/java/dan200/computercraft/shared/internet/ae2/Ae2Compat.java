@@ -33,6 +33,7 @@ import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -297,14 +298,31 @@ public final class Ae2Compat {
                     var name = getString(req, "name");
                     var count = getLong(req, "count", 1);
                     if (count <= 0) throw new IllegalArgumentException("count must be positive.");
+                    checkAuthorized(host, req, name);
                     yield Map.of("stored", pushItem(host, name, count));
                 }
                 case "extractItem" -> {
                     var name = getString(req, "name");
                     var count = getLong(req, "count", 1);
                     if (count <= 0) throw new IllegalArgumentException("count must be positive.");
+                    checkAuthorized(host, req, name);
                     yield Map.of("extracted", extractItem(host, name, count));
                 }
+                case "addAuthKey" -> {
+                    var key = getString(req, "key");
+                    var items = new HashSet<String>();
+                    if (req.has("items")) {
+                        for (var el : req.get("items").getAsJsonArray()) items.add(el.getAsString());
+                    } else {
+                        items.add(NetworkAdapterBlockEntity.AUTH_ALL);
+                    }
+                    yield Map.of("added", addAuthKey(host, key, items));
+                }
+                case "removeAuthKey" -> {
+                    var key = getString(req, "key");
+                    yield Map.of("removed", removeAuthKey(host, key));
+                }
+                case "listAuth" -> listAuth(host);
                 default -> throw new IllegalArgumentException("Unknown operation '" + op + "'.");
             };
 
@@ -352,6 +370,76 @@ public final class Ae2Compat {
         } catch (IllegalStateException e) {
             throw new IllegalArgumentException("'" + key + "' must be a number.");
         }
+    }
+
+    /**
+     * Reject a write to an item if the request's key does not authorise it.
+     *
+     * @param host The host, as returned by {@link #createHost}.
+     * @param req  The request object, whose optional "key" field names the key.
+     * @param item The Minecraft item id being written.
+     * @throws IllegalArgumentException If the request is unauthorised.
+     */
+    private static void checkAuthorized(Object host, JsonObject req, String item) {
+        var adapter = ((Ae2GridNodeHost) host).adapter;
+        // With no key configured the adapter is unsecured: writes are allowed directly, exactly as before auth.
+        if (adapter.getAuth().isEmpty()) return;
+        String key = null;
+        if (req.has("key")) {
+            try {
+                key = req.get("key").getAsString();
+            } catch (IllegalStateException e) {
+                throw new IllegalArgumentException("'key' must be a string.");
+            }
+        }
+        if (!adapter.isAuthorized(key, item)) {
+            throw new IllegalArgumentException("unauthorized");
+        }
+    }
+
+    /**
+     * Register or replace a key's write permissions.
+     *
+     * @param host  The host, as returned by {@link #createHost}.
+     * @param key   The key to register.
+     * @param items The item ids the key may write to; empty means "no items", or use
+     *              {@link NetworkAdapterBlockEntity#AUTH_ALL} for every item.
+     * @return Whether the key already existed.
+     */
+    public static boolean addAuthKey(Object host, String key, Set<String> items) {
+        var adapter = ((Ae2GridNodeHost) host).adapter;
+        var existed = adapter.getAuth().containsKey(key);
+        adapter.setAuthKey(key, items);
+        return existed;
+    }
+
+    /**
+     * Remove a key's permissions.
+     *
+     * @param host The host, as returned by {@link #createHost}.
+     * @param key  The key to remove.
+     * @return Whether the key existed.
+     */
+    public static boolean removeAuthKey(Object host, String key) {
+        var adapter = ((Ae2GridNodeHost) host).adapter;
+        var existed = adapter.getAuth().containsKey(key);
+        adapter.removeAuthKey(key);
+        return existed;
+    }
+
+    /**
+     * List every key and the items it may write to.
+     *
+     * @param host The host, as returned by {@link #createHost}.
+     * @return A map of key to its list of allowed item ids.
+     */
+    public static Map<String, List<String>> listAuth(Object host) {
+        var adapter = ((Ae2GridNodeHost) host).adapter;
+        var result = new LinkedHashMap<String, List<String>>();
+        for (var entry : adapter.getAuth().entrySet()) {
+            result.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        return result;
     }
 
     /**

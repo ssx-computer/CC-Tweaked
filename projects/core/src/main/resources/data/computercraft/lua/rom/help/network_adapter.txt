@@ -36,7 +36,29 @@ Methods:
     Pull "count" of the given item out of the ME network. Returns the number actually
     extracted.
 
+  addAuthKey(key, [items])
+    Register a key that may write to the given item ids (or to every item, if "items" is
+    omitted). Returns whether the key already existed. See "Authentication" below.
+
+  removeAuthKey(key)
+    Remove a key's write permissions. Returns whether the key existed.
+
+  listAuth()
+    Returns a map of each key to the list of item ids it may write to.
+
 Example: print("stored", peripheral.wrap("me0").getItems())
+
+Authentication
+--------------
+
+An adapter can protect its ME storage with keys. Until any key is configured, writes are
+allowed directly, exactly as without authentication. Once you register a key with
+addAuthKey(), the adapter is locked: pushItem() and extractItem() only work if the request
+carries a key which is registered for that item. Read-only methods (getItems, getCells,
+getPower, getCraftable) never require a key.
+
+For the peripheral, pass the key to addAuthKey() when registering it. For the "cc.me"
+module, put a "key" field in the pushItem()/extractItem() request:
 
 Accessing ME over the virtual network
 ------------------------------------
@@ -50,7 +72,13 @@ returns the reply. It broadcasts to find an adapter:
 
     local me = require("cc.me")
     print(me.getItems())
-    me.pushItem({ name = "minecraft:cobblestone", count = 64 })
+    me.pushItem({ name = "minecraft:cobblestone", count = 64, key = "my-key" })
+
+You can manage keys over the virtual network too:
+
+    me.addAuthKey("my-key", { "minecraft:cobblestone" })
+    me.listAuth()
+    me.removeAuthKey("my-key")
 
 Each method takes a table of extra arguments and an optional adapter address. To talk to a
 specific adapter, pass its virtual-network address: me.getItems({}, "10.0.0.5").
@@ -65,4 +93,6 @@ A request is a JSON object with an "op" and an optional "id". The reply is
 {"ok":true,"id":...,"result":...} on success, or {"ok":false,"error":"..."} on failure.
 
 The valid operations are isConnected, getItems, getCells, getPower, getCraftable, pushItem
-(pass "name" and "count") and extractItem (pass "name" and "count").
+(pass "name", "count" and optionally "key"), extractItem (pass "name", "count" and
+optionally "key"), addAuthKey (pass "key" and optionally "items"), removeAuthKey (pass
+"key") and listAuth.

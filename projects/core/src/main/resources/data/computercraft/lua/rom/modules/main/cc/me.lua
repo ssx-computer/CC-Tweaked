@@ -44,7 +44,8 @@ end
 -- request is sent at most once.
 --
 -- @tparam string op The operation to perform: "isConnected", "getItems", "getCells",
---     "getPower", "getCraftable", "pushItem" or "extractItem".
+--     "getPower", "getCraftable", "pushItem", "extractItem", "addAuthKey", "removeAuthKey"
+--     or "listAuth".
 -- @tparam[opt] table args Extra fields for the request, such as "name" and "count".
 -- @tparam[opt] string address The address of a specific adapter, or nil to broadcast.
 -- @treturn table The "result" field of the reply.
@@ -156,13 +157,16 @@ end
 
 --- Store some items into the ME network.
 --
--- @tparam table args The request arguments: { name = "minecraft:cobblestone", count = 64 }.
+-- The request may carry a "key" field: the adapter only allows a write to an item if the
+-- key is registered for it. Without a key, writes are refused with "unauthorized".
+--
+-- @tparam table args The request arguments: { name = "minecraft:cobblestone", count = 64, key = "my-key" }.
 -- @tparam[opt] string address The address of a specific adapter, or nil to broadcast.
 -- @treturn number The number of items actually stored.
 -- @usage Store a stack of cobblestone.
 --
 --     local me = require("cc.me")
---     me.pushItem({ name = "minecraft:cobblestone", count = 64 })
+--     me.pushItem({ name = "minecraft:cobblestone", count = 64, key = "my-key" })
 local function pushItem(args, address)
     expect(1, args, "table")
     return request("pushItem", args, address)
@@ -170,16 +174,63 @@ end
 
 --- Pull some items out of the ME network.
 --
--- @tparam table args The request arguments: { name = "minecraft:cobblestone", count = 64 }.
+-- The request may carry a "key" field: the adapter only allows a write to an item if the
+-- key is registered for it. Without a key, writes are refused with "unauthorized".
+--
+-- @tparam table args The request arguments: { name = "minecraft:cobblestone", count = 64, key = "my-key" }.
 -- @tparam[opt] string address The address of a specific adapter, or nil to broadcast.
 -- @treturn number The number of items actually extracted.
 -- @usage Pull a stack of cobblestone.
 --
 --     local me = require("cc.me")
---     me.extractItem({ name = "minecraft:cobblestone", count = 64 })
+--     me.extractItem({ name = "minecraft:cobblestone", count = 64, key = "my-key" })
 local function extractItem(args, address)
     expect(1, args, "table")
     return request("extractItem", args, address)
+end
+
+--- Register or replace a key's write permissions.
+--
+-- @tparam string key The key to register.
+-- @tparam[opt] { string... } items The item ids the key may write to; nil grants access to every item.
+-- @tparam[opt] string address The address of a specific adapter, or nil to broadcast.
+-- @treturn boolean Whether the key already existed.
+-- @usage Give the key "alice" access to cobblestone only.
+--
+--     local me = require("cc.me")
+--     me.addAuthKey("alice", { "minecraft:cobblestone" })
+local function addAuthKey(key, items, address)
+    expect(1, key, "string")
+    expect(2, items, "table", "nil")
+    local args = { key = key }
+    if items then args.items = items end
+    return request("addAuthKey", args, address)
+end
+
+--- Remove a key's write permissions.
+--
+-- @tparam string key The key to remove.
+-- @tparam[opt] string address The address of a specific adapter, or nil to broadcast.
+-- @treturn boolean Whether the key existed.
+-- @usage Revoke the key "alice".
+--
+--     local me = require("cc.me")
+--     me.removeAuthKey("alice")
+local function removeAuthKey(key, address)
+    expect(1, key, "string")
+    return request("removeAuthKey", { key = key }, address)
+end
+
+--- List every key and the items it may write to.
+--
+-- @tparam[opt] string address The address of a specific adapter, or nil to broadcast.
+-- @treturn table A map of each key to the list of item ids it may write to.
+-- @usage Print every key and its permissions.
+--
+--     local me = require("cc.me")
+--     for key, items in pairs(me.listAuth()) do print(key, table.concat(items, ",")) end
+local function listAuth(address)
+    return request("listAuth", nil, address)
 end
 
 return {
@@ -191,4 +242,7 @@ return {
     getCraftable = getCraftable,
     pushItem = pushItem,
     extractItem = extractItem,
+    addAuthKey = addAuthKey,
+    removeAuthKey = removeAuthKey,
+    listAuth = listAuth,
 }

@@ -22,7 +22,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The block entity for a {@link NetworkAdapterBlock}: one half speaks CC's networking cable, the other speaks AE2's ME
@@ -41,6 +44,24 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
      * The name AE2 is registered under. Used to decide whether the AE2 half of the adapter can be created.
      */
     static final String AE2_MOD_ID = "ae2";
+
+    /**
+     * The NBT key the authentication policy is stored under.
+     */
+    private static final String NBT_AUTH = "auth";
+
+    /**
+     * The wildcard item id, meaning "every item".
+     */
+    public static final String AUTH_ALL = "*";
+
+    /**
+     * The authentication policy: maps a key to the set of item ids that key may write to. An empty set means the key
+     * grants no write access; a set containing {@link #AUTH_ALL} grants access to every item.
+     * <p>
+     * Read-only operations (list/status) never require a key; only writes (push/extract) do.
+     */
+    private final Map<String, Set<String>> auth = new HashMap<>();
 
     /**
      * The CC-facing port. This is the wired element CC cables connect to.
@@ -166,6 +187,14 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
 
         var host = ae2Host;
         if (host != null) Ae2Compat.saveToNbt(host, nbt);
+
+        var authTag = new CompoundTag();
+        for (var entry : auth.entrySet()) {
+            var itemsTag = new CompoundTag();
+            for (var item : entry.getValue()) itemsTag.putBoolean(item, true);
+            authTag.put(entry.getKey(), itemsTag);
+        }
+        if (!authTag.isEmpty()) nbt.put(NBT_AUTH, authTag);
     }
 
     @Override
@@ -174,6 +203,61 @@ public class NetworkAdapterBlockEntity extends BlockEntity implements InternetPo
 
         var host = ae2Host;
         if (host != null) Ae2Compat.loadFromNbt(host, nbt);
+
+        auth.clear();
+        if (nbt.contains(NBT_AUTH)) {
+            var authTag = nbt.getCompound(NBT_AUTH);
+            for (var key : authTag.getAllKeys()) {
+                var itemsTag = authTag.getCompound(key);
+                var items = new HashSet<String>();
+                for (var item : itemsTag.getAllKeys()) items.add(item);
+                auth.put(key, items);
+            }
+        }
+    }
+
+    /**
+     * Whether a key may write to a given item id.
+     *
+     * @param key  The key supplied by the requester, or {@code null} for an unauthenticated request.
+     * @param item The Minecraft item id, such as {@code minecraft:cobblestone}.
+     * @return Whether the request is authorised to write to that item.
+     */
+    public boolean isAuthorized(@Nullable String key, String item) {
+        if (key == null) return false;
+        var allowed = auth.get(key);
+        if (allowed == null) return false;
+        return allowed.contains(AUTH_ALL) || allowed.contains(item);
+    }
+
+    /**
+     * Register or replace a key's write permissions.
+     *
+     * @param key   The key to register.
+     * @param items The item ids the key may write to; empty means "no items", {@link #AUTH_ALL} means "all items".
+     */
+    public void setAuthKey(String key, Set<String> items) {
+        auth.put(key, new HashSet<>(items));
+        setChanged();
+    }
+
+    /**
+     * Remove a key.
+     *
+     * @param key The key to remove.
+     */
+    public void removeAuthKey(String key) {
+        auth.remove(key);
+        setChanged();
+    }
+
+    /**
+     * A read-only view of the authentication policy.
+     *
+     * @return The key-to-items map.
+     */
+    public Map<String, Set<String>> getAuth() {
+        return Map.copyOf(auth);
     }
 
     /**
